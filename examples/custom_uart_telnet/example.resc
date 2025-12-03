@@ -1,0 +1,31 @@
+include "/workspace/peripherals/i2c/LOGGER_I2C.cs"
+
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_uart_telnet/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_uart_telnet/firmware.elf
+
+# Show UART on consode
+showAnalyzer usart3
+# Dump UART to file
+usart3 RecordToAsciinema @customboard-usart3.log
+# Allow us to connect to our UART
+# from the host machine: telnet localhost 1234
+emulation CreateServerSocketTerminal 1234 "usart3-cusbo"
+connector Connect sysbus.usart3 usart3-cusbo
+
+
+# then use echo "o" | nc -q 0 127.0.0.1 1234  or  telnet 127.0.0.1 1234
+
+logLevel -1 gpioPortB.RedLed
+
+emulation RunFor "10s"
+
+start
+
+quit
+
+

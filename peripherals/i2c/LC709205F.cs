@@ -1,0 +1,1 @@
+/workspace/thirdparty/renode-infrastructure/src/Emulator/Peripherals/Peripherals/I2C/LC709205F.cs

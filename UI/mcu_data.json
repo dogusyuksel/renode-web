@@ -1,0 +1,175 @@
+{
+  "stm32f103": {
+    "ports": [
+      "gpioPortA",
+      "gpioPortB",
+      "gpioPortC",
+      "gpioPortD",
+      "gpioPortE",
+      "gpioPortF",
+      "gpioPortG"
+    ],
+    "pins": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "peripherals": {
+      "i2c1": [
+        "LM95245",
+        "SHT21",
+        "LC709205F",
+        "BME280",
+        "SHT45",
+        "BMC050",
+        "LOGGER_I2C",
+        "BMA180"
+      ],
+      "i2c2": [
+        "LM95245",
+        "SHT21",
+        "LC709205F",
+        "BME280",
+        "SHT45",
+        "BMC050",
+        "LOGGER_I2C",
+        "BMA180"
+      ],
+      "spi1": [
+        "Cypress_S25H",
+        "LOGGER_SPI",
+        "GigaDevice_GD25LQ",
+        "GenericSpiFlash",
+        "NANDFlash",
+        "Micron_MT25Q"
+      ],
+      "spi2": [
+        "Cypress_S25H",
+        "LOGGER_SPI",
+        "GigaDevice_GD25LQ",
+        "GenericSpiFlash",
+        "NANDFlash",
+        "Micron_MT25Q"
+      ],
+      "gpio": [
+        "BUTTON",
+        "CS",
+        "USERLED"
+      ],
+      "usart1": [
+        "LOGGER_USART"
+      ],
+      "usart2": [
+        "LOGGER_USART"
+      ],
+      "usart3": [
+        "LOGGER_USART"
+      ],
+      "usart4": [
+        "LOGGER_USART"
+      ],
+      "usart5": [
+        "LOGGER_USART"
+      ]
+    }
+  },
+  "renesas-da14531": {
+    "ports": [
+      "gpio"
+    ],
+    "pins": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "peripherals": {
+      "i2c": [
+        "LM95245",
+        "SHT21",
+        "LC709205F",
+        "BME280",
+        "SHT45",
+        "BMC050",
+        "LOGGER_I2C",
+        "BMA180"
+      ],
+      "spi": [
+        "Cypress_S25H",
+        "LOGGER_SPI",
+        "GigaDevice_GD25LQ",
+        "GenericSpiFlash",
+        "NANDFlash",
+        "Micron_MT25Q"
+      ],
+      "gpio": [
+        "BUTTON",
+        "CS",
+        "USERLED"
+      ],
+      "uart0": [
+        "LOGGER_UART"
+      ],
+      "uart1": [
+        "LOGGER_UART"
+      ]
+    }
+  }
+}

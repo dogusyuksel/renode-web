@@ -1,0 +1,11 @@
+using "/workspace/extendedcpus/stm32f103.repl"
+
+flashMem: Memory.MappedMemory
+    size: 0x100000
+
+MX25R: Antmicro.Renode.Peripherals.SPI.MX25R @ spi1
+    underlyingMemory: flashMem
+
+CHIP_SELECT: Antmicro.Renode.Peripherals.Miscellaneous.CS @ gpioPortB
+gpioPortB:
+    6 -> CHIP_SELECT@0

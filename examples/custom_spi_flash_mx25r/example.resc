@@ -1,0 +1,20 @@
+include "/workspace/peripherals/spi/MX25R.cs"
+include "/workspace/peripherals/gpio/CS.cs"
+
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_spi_flash_mx25r/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_spi_flash_mx25r/firmware.elf
+
+showAnalyzer usart3
+logLevel -1 gpioPortB.CHIP_SELECT
+logLevel -1 sysbus.spi1.MX25R
+
+emulation RunFor "10s"
+
+start
+
+quit

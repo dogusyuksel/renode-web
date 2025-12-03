@@ -1,0 +1,10 @@
+{
+  "mcu": "stm32f103",
+  "email": "dogus",
+  "connections": [
+    {
+      "peripheral": "i2c1",
+      "sensor": "LOGGER_I2C"
+    }
+  ]
+}

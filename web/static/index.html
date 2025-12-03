@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MCU → Peripheral → Sensor Configurator</title>
+<style>
+  :root{--accent:#2b6cb0;--muted:#666;--bg:#f7fafc}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#111}
+  .wrap{padding:14px;max-width:1200px;margin:0 auto;display:grid;gap:12px}
+  header{display:flex;align-items:center;justify-content:space-between}
+  h1{font-size:18px;margin:0}
+  .card{background:white;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(20,20,40,0.06)}
+  label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+  select,input[type="file"],button{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1;min-width:220px}
+  button{cursor:pointer;background:var(--accent);color:white;border:0}
+  button.secondary{background:#e2e8f0;color:#0b1220}
+  .small{font-size:13px;padding:6px}
+  .connections{max-height:160px;overflow:auto;margin-top:8px}
+  .conn-item{display:flex;justify-content:space-between;align-items:center;padding:6px;border-radius:6px;background:#f1f5f9;margin-bottom:6px}
+  .diagram-wrap{width:100%;height:480px;overflow:auto;background:#fff;padding:8px;border-radius:8px;resize:vertical}
+  svg{width:100%;height:100%}
+  .controls{display:flex;gap:8px;margin-top:8px}
+  pre{white-space:pre-wrap;font-size:13px;background:#0b122040;padding:8px;border-radius:6px;color:#071023}
+  .slider{position:relative;width:100%;height:180px;overflow:hidden;border-radius:10px}
+  .slides{display:flex;width:300%;height:100%;animation:slide 9s infinite}
+  .slides img{width:100%;object-fit:cover}
+  @keyframes slide {
+    0%{transform:translateX(0%)}
+    33%{transform:translateX(-100%)}
+    66%{transform:translateX(-200%)}
+    100%{transform:translateX(0%)}
+  }
+  @media (max-width:880px){
+    .mid-section{flex-direction:column}
+    .diagram-wrap{height:360px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Easy FM Test for ARM</h1></header>
+
+<!-- Image slider -->
+<div class="card">
+  <div class="slider">
+    <div class="slides">
+      <img src="https://picsum.photos/seed/board1/800/200" />
+      <img src="https://picsum.photos/seed/board2/800/200" />
+      <img src="https://picsum.photos/seed/board3/800/200" />
+    </div>
+  </div>
+</div>
+
+<!-- ELF file selection + Email -->
+<div class="card">
+  <div class="row">
+    <div class="col">
+      <label>Select ELF file (.elf)</label>
+      <input id="elfInput" type="file" accept=".elf" />
+    </div>
+    <div class="col">
+      <label>Email</label>
+      <input id="emailInput" type="email" placeholder="you@example.com" />
+    </div>
+  </div>
+</div>
+
+
+<!-- MCU + Diagram section -->
+<div class="card mid-section" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+  <div style="flex:1;min-width:280px;">
+    <label>Select MCU</label>
+    <select id="mcuSelect"><option value="">-- Select MCU --</option></select>
+
+    <div id="peripheralSection" style="display:none">
+      <label>Select Peripheral</label>
+      <select id="peripheralSelect"><option value="">-- Select Peripheral --</option></select>
+    </div>
+
+    <div id="sensorSection" style="display:none">
+      <label>Select Sensor</label>
+      <select id="sensorSelect"><option value="">-- Select Sensor --</option></select>
+      <label>Port</label>
+      <select id="portSelect" disabled></select>
+      <label>Pin</label>
+      <select id="pinSelect" disabled></select>
+    </div>
+
+    <div class="controls">
+      <button id="addBtn" class="small" disabled>Add</button>
+      <button id="clearBtn" class="small secondary">Clear</button>
+    </div>
+
+    <label style="margin-top:12px">Connections (added)</label>
+    <div class="connections card" id="connectionsList"></div>
+  </div>
+
+  <div style="flex:2;min-width:400px;">
+    <label>Block Diagram</label>
+    <div class="diagram-wrap"><svg id="diagramSvg" viewBox="0 0 900 700"></svg></div>
+  </div>
+</div>
+
+<!-- Output Format -->
+<div class="card" style="display:none;">
+  <label>Output Format</label>
+  <pre id="outFormat">mcu=[]</pre>
+</div>
+
+<!-- Apply Button -->
+<div style="text-align:right;">
+  <button id="applyBtn" class="small">Apply</button>
+</div>
+
+</div>
+
+<script>
+let mcuData = {};
+const s={mcu:"",peripheral:"",sensor:"",port:"",pin:"",connections:[],elfFile:null};
+
+const $=id=>document.getElementById(id);
+const mcu=$("mcuSelect"),perp=$("peripheralSelect"),sens=$("sensorSelect"),
+pSec=$("peripheralSection"),sSec=$("sensorSection"),add=$("addBtn"),clr=$("clearBtn"),
+list=$("connectionsList"),out=$("outFormat"),elf=$("elfInput"),apply=$("applyBtn"),
+svg=$("diagramSvg"),portSel=$("portSelect"),pinSel=$("pinSelect");
+
+function fill(sel,arr,placeholder){
+  sel.innerHTML=`<option value="">-- ${placeholder} --</option>`;
+  arr.forEach(v=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=v;
+    sel.appendChild(o);
+  });
+}
+
+async function loadMCUData(){
+  try{
+    const resp = await fetch("mcu_data.json");
+    if(!resp.ok) throw new Error("MCU JSON not found");
+    mcuData = await resp.json();
+    fill(mcu,Object.keys(mcuData),"Select MCU");
+  }catch(err){
+    alert("Failed to load MCU data");
+    console.error(err);
+  }
+}
+window.onload = loadMCUData;
+
+mcu.onchange = e => {
+  s.mcu = e.target.value;
+  s.peripheral = s.sensor = s.port = s.pin = "";
+  perp.value=sens.value=portSel.value=pinSel.value="";
+  list.innerHTML="";
+  sSec.style.display="none";
+  if(s.mcu){
+    fill(perp, Object.keys(mcuData[s.mcu].peripherals), "Select Peripheral");
+    pSec.style.display="block";
+  }else pSec.style.display="none";
+  update();
+}
+
+perp.onchange = e => {
+  s.peripheral = e.target.value;
+  if(s.peripheral && s.mcu){
+    const sensors = mcuData[s.mcu].peripherals[s.peripheral] || [];
+    fill(sens, sensors, "Select Sensor");
+    sSec.style.display="block";
+
+    if(s.peripheral==="GPIO" || s.peripheral==="ADC" || s.peripheral==="gpio" || s.peripheral==="adc"){
+      fill(portSel, mcuData[s.mcu]["ports"], "Select Port");
+      fill(pinSel, mcuData[s.mcu]["pins"], "Select Pin");
+      portSel.disabled = false;
+      pinSel.disabled = false;
+    }else{
+      portSel.disabled = pinSel.disabled = true;
+      portSel.value=""; pinSel.value="";
+      s.port=""; s.pin="";
+    }
+  }else sSec.style.display="none";
+  s.sensor=""; update();
+}
+
+sens.onchange = e => { s.sensor = e.target.value; update(); }
+portSel.onchange = e => { s.port = e.target.value; update(); }
+pinSel.onchange = e => { s.pin = e.target.value; update(); }
+
+add.onclick = () => {
+  if(!s.mcu || !s.peripheral || !s.sensor) return;
+  const conn = {peripheral:s.peripheral,sensor:s.sensor};
+  if(s.peripheral==="GPIO"||s.peripheral==="ADC" || s.peripheral==="gpio" || s.peripheral==="adc"){
+    conn.port = s.port||"";
+    conn.pin = parseInt(s.pin)||"";
+  }
+  s.connections.push(conn);
+  s.peripheral=s.sensor=s.port=s.pin="";
+  perp.value=sens.value=portSel.value=pinSel.value="";
+  portSel.disabled=pinSel.disabled=true;
+  sSec.style.display="none";
+  update(); draw();
+}
+
+clr.onclick = () => {
+  Object.assign(s,{mcu:"",peripheral:"",sensor:"",port:"",pin:"",connections:[],elfFile:null});
+  mcu.value=perp.value=sens.value=portSel.value=pinSel.value=elf.value="";
+  pSec.style.display=sSec.style.display="none";
+  portSel.disabled=pinSel.disabled=true;
+  update(); draw();
+}
+
+elf.onchange = e => { s.elfFile = e.target.files[0]||null; update(); }
+
+apply.onclick = async () => {
+  if(!s.mcu) return alert("Please select MCU first");
+  const emailVal = document.getElementById("emailInput").value || "";
+  const data = {mcu:s.mcu, email:emailVal, connections:s.connections};
+  const form = new FormData();
+  form.append("data", JSON.stringify(data));
+  if(s.elfFile) form.append("elf", s.elfFile);
+
+  try{
+    const r = await fetch("/upload",{method:"POST",body:form});
+    if(r.ok) alert("Sent successfully!");
+    else throw new Error("No server");
+  }catch(e){
+    const out={payload:data,elfName:s.elfFile?s.elfFile.name:null,time:new Date().toISOString()};
+    const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="mcu_config.json"; a.click();
+    URL.revokeObjectURL(url);
+    alert("JSON file downloaded.");
+  }
+}
+
+
+function update(){
+  list.innerHTML="";
+  s.connections.forEach((c,i)=>{
+    const d=document.createElement("div"); d.className="conn-item";
+    const l=document.createElement("div");
+    l.textContent=`${s.mcu||"(no MCU)"} → ${c.peripheral} → ${c.sensor}${c.port?` → ${c.port}`:""}${c.pin!==undefined?` → ${c.pin}`:""}`;
+    const r=document.createElement("button");
+    r.textContent="×"; r.className="small secondary";
+    r.onclick=()=>{ s.connections.splice(i,1); update(); draw(); };
+    d.append(l,r); list.appendChild(d);
+  });
+  add.disabled=!(s.mcu && s.peripheral && s.sensor);
+  out.textContent=JSON.stringify({mcu:s.mcu,connections:s.connections},null,2);
+}
+
+function draw(){
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  if(!s.mcu) return;
+  const ns = n => document.createElementNS("http://www.w3.org/2000/svg",n);
+  const w=900,h=700; svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+  const mX=w/2-100,mY=40,mW=200,mH=70;
+  const mRect=ns("rect");
+  mRect.setAttribute("x",mX); mRect.setAttribute("y",mY);
+  mRect.setAttribute("width",mW); mRect.setAttribute("height",mH);
+  mRect.setAttribute("rx",10); mRect.setAttribute("fill","#e6f2ff");
+  mRect.setAttribute("stroke","#2b6cb0"); mRect.setAttribute("stroke-width",2); svg.appendChild(mRect);
+  const mText=ns("text");
+  mText.setAttribute("x",mX+mW/2); mText.setAttribute("y",mY+mH/2+4);
+  mText.setAttribute("text-anchor","middle"); mText.setAttribute("font-size","16"); mText.textContent=s.mcu; svg.appendChild(mText);
+  s.connections.forEach((c,i)=>{
+    const y=mY+120+i*90, pX=mX+mW/2-80, sX=mX+mW/2+80;
+    const line=ns("line");
+    line.setAttribute("x1",mX+mW/2); line.setAttribute("y1",mY+mH);
+    line.setAttribute("x2",mX+mW/2); line.setAttribute("y2",y-20);
+    line.setAttribute("stroke","#888"); line.setAttribute("stroke-width",1.5); svg.appendChild(line);
+    const pText=ns("text"); pText.setAttribute("x",pX); pText.setAttribute("y",y); pText.setAttribute("font-size","14"); pText.textContent=c.peripheral; svg.appendChild(pText);
+    const sText=ns("text"); sText.setAttribute("x",sX); sText.setAttribute("y",y); sText.setAttribute("font-size","14"); sText.textContent=c.sensor; svg.appendChild(sText);
+    if(c.port) { const portText=ns("text"); portText.setAttribute("x",pX); portText.setAttribute("y",y+16); portText.setAttribute("font-size","12"); portText.textContent=`Port: ${c.port}`; svg.appendChild(portText);}
+    if(c.pin!==undefined) { const pinText=ns("text"); pinText.setAttribute("x",pX); pinText.setAttribute("y",y+32); pinText.setAttribute("font-size","12"); pinText.textContent=`Pin: ${c.pin}`; svg.appendChild(pinText);}
+    const connector=ns("line"); connector.setAttribute("x1",pX+30); connector.setAttribute("y1",y-4); connector.setAttribute("x2",sX-30); connector.setAttribute("y2",y-4);
+    connector.setAttribute("stroke","#2b6cb0"); connector.setAttribute("stroke-width",2); svg.appendChild(connector);
+  });
+}
+window.addEventListener("resize", draw);
+</script>
+</body>
+</html>

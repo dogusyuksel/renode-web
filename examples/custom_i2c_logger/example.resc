@@ -1,0 +1,24 @@
+include "/workspace/peripherals/i2c/LOGGER_I2C.cs"
+
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_i2c_logger/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_i2c_logger/firmware.elf
+
+showAnalyzer usart3
+logLevel -1 gpioPortB.RedLed
+logLevel -1 gpioPortB.GreenLed
+logLevel -1 gpioPortB.BlueLed
+logLevel -1 sysbus.i2c1
+logLevel -1 sysbus.i2c1.BMA180
+
+emulation RunFor "10s"
+
+start
+
+quit
+
+

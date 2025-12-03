@@ -1,0 +1,51 @@
+include "/workspace/peripherals/i2c/LOGGER_I2C.cs"
+
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_gdb/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_gdb/firmware.elf
+
+# Show UART on consode
+showAnalyzer usart3
+# Dump UART to file
+usart3 RecordToAsciinema @customboard-usart3.log
+# Allow us to connect to our UART
+# from the host machine: telnet localhost 1234
+emulation CreateServerSocketTerminal 1234 "usart3-cusbo"
+connector Connect sysbus.usart3 usart3-cusbo
+
+
+# then use echo "o" | nc -q 0 127.0.0.1 1234  or  telnet 127.0.0.1 1234
+
+logLevel -1 gpioPortB.RedLed
+
+machine StartGdbServer 3333 true
+
+
+# | Amaç                      | MI2 Komutu                                       | Açıklama                                   |
+# | ------------------------- | ------------------------------------------------ | ------------------------------------------ |
+# | ELF yükle                 | `-file-exec-and-symbols firmware.elf`            | ELF dosyasını yükler                       |
+# | Hedefe bağlan             | `-target-select remote localhost:3333`           | OpenOCD veya benzeri hedefe bağlanır       |
+# | Firmware’i yükle          | `-target-download`                               | ELF’i hedefe yazar (`load` komutuna denk)  |
+# | Programı çalıştır         | `-exec-continue`                                 | `continue` komutu ile aynıdır              |
+# | Programı durdur           | `-exec-interrupt`                                | `Ctrl+C` benzeri durdurma                  |
+# | Tek adım (step in)        | `-exec-step`                                     | Bir satır içeri adım atar                  |
+# | Step over                 | `-exec-next`                                     | Aynı fonksiyon içinde sonraki satıra geçer |
+# | Breakpoint ekle           | `-break-insert main`                             | `main` fonksiyonuna breakpoint koyar       |
+# | Breakpoint kaldır         | `-break-delete 1`                                | ID’si 1 olan breakpoint’i siler            |
+# | Register oku              | `-data-list-register-values x`                   | Tüm register’ları listeler                 |
+# | Bellek oku                | `-data-read-memory-bytes 0x20000000 64`          | 0x20000000 adresinden 64 byte okur         |
+# | Bellek yaz                | `-data-write-memory-bytes 0x20000000 "12345678"` | Belleğe veri yazar                         |
+# | Thread listesi            | `-thread-info`                                   | Tüm thread’leri listeler                   |
+# | Stack trace               | `-stack-list-frames`                             | Stack frame listesini döner                |
+# | Yerel değişkenleri göster | `-stack-list-locals 1`                           | Aktif frame’deki değişkenleri listeler     |
+
+
+
+# eg: arm-none-eabi-gdb --interpreter=mi2 examples/custom_uart_telnet/firmware.elf     -ex "target remote localhost:3333"     -ex "load"     -ex "continue"
+
+
+

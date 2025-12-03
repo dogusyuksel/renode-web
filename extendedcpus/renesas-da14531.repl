@@ -1,0 +1,65 @@
+nvic: IRQControllers.NVIC @ sysbus new Bus.BusPointRegistration {
+    address: 0xE000E000;
+    cpu: cpu_m0
+}
+    priorityMask: 0xF0
+    systickFrequency: 16000000
+    IRQ -> cpu_m0@0
+
+cpu_m0: CPU.CortexM @ sysbus
+    cpuType: "cortex-m0+"
+    nvic: nvic
+    id: 0
+
+rom: Memory.MappedMemory @ sysbus 0x07F00000
+    size: 0x24000
+
+otp: Memory.MappedMemory @ sysbus 0x07F80000
+    size: 0x8000
+
+sram: Memory.MappedMemory @ sysbus 0x07FC0000
+    size: 0xC000
+
+ble_ll: Memory.MappedMemory @ sysbus 0x40000000
+    size: 0x1000
+
+ble_radio: Memory.MappedMemory @ sysbus 0x40001000
+    size: 0x3000
+
+timer0_2: Timers.RenesasDA14_GPT @ sysbus 0x50003400
+    -> nvic@15
+
+timer1: Timers.RenesasDA14_GPT @ sysbus 0x50004000
+    -> nvic@17
+
+uart0: UART.RenesasDA14_UART @ sysbus 0x50001000
+    -> nvic@2
+
+uart1: UART.RenesasDA14_UART @ sysbus 0x50001100
+    -> nvic@3
+
+gpio: GPIOPort.RenesasDA14_GPIO @ sysbus 0x50003000
+
+dma: DMA.RenesasDA14_DMA @ sysbus 0x50003600
+    IRQ -> nvic@19
+
+i2c: I2C.RenesasDA_I2C @ sysbus 0x50001300
+    dma: dma
+    -> nvic@4
+
+spi: SPI.RenesasDA_SPI @ sysbus 0x50001200
+    -> nvic@5
+
+adc: Analog.RenesasDA14_GPADC @ sysbus 0x50001500
+    IRQ -> nvic@6
+
+sysbus:
+    init:
+        Tag <0x50000000,0x500000FF> "PMU_CRG"
+        Tag <0x50000100,0x500001FF> "WAKE_UP"
+        Tag <0x50000200,0x500002FF> "QUADRATURE_DECODER"
+        Tag <0x50001400,0x500014FF> "KEYBOARD"
+        Tag <0x50001600,0x500016FF> "ANA_MISC"
+        Tag <0x50003300,0x500033FF> "GENERAL_PURPOSE"
+        Tag <0x50003500,0x500035FF> "RF_MON"
+        Tag <0x50004100,0x500041FF> "RTC"

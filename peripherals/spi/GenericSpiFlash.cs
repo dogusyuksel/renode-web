@@ -1,0 +1,1 @@
+/workspace/thirdparty/renode-infrastructure/src/Emulator/Peripherals/Peripherals/SPI/GenericSpiFlash.cs

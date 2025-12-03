@@ -1,0 +1,24 @@
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_can/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_can/firmware.elf
+
+showAnalyzer usart3
+
+# Create internal CAN hub for routing frames
+emulation CreateCANHub "canHub"
+# Connect CAN controller to the CAN hub
+connector Connect sysbus.can1 canHub
+# Create CAN bridge to host, by default it will be named `vcan0`
+machine CreateSocketCANBridge "socketcan"
+# Connect bridge to the internal network
+connector Connect socketcan canHub
+
+emulation RunFor "10s"
+
+start
+
+

@@ -1,0 +1,29 @@
+name: pr-workflow
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pr-workflow-job:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        github-server-url: https://github.com/dogusyuksel/renode-web.git
+        lfs: true
+
+    - name: build
+      run: |
+        ./docker_ctl.sh -b -s -c "cd /workspace && python3 auto_resc_generator.py && renode uploads/example.resc"
+        ./docker_ctl.sh -s -c "cd /workspace && python3 report_creator.py --connections uploads/structure.json --diagram uploads/diagram.png --log uploads/log.txt --out uploads/report.pdf"
+
+    - name: Upload video as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: uploads
+        path: uploads

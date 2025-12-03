@@ -1,0 +1,12 @@
+using "/workspace/extendedcpus/stm32f103.repl"
+
+RedLed: Miscellaneous.LED @ gpioPortB
+GreenLed: Miscellaneous.LED @ gpioPortB
+BlueLed: Miscellaneous.LED @ gpioPortB
+gpioPortB:
+    13 -> RedLed@0
+    14 -> GreenLed@0
+    15 -> BlueLed@0
+
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@7

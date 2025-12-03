@@ -1,0 +1,20 @@
+include "/workspace/peripherals/spi/LOGGER_SPI.cs"
+include "/workspace/peripherals/gpio/CS.cs"
+
+using sysbus
+
+mach create
+
+machine LoadPlatformDescription @/workspace/examples/custom_spi_logger/example.repl
+
+sysbus LoadELF @/workspace/examples/custom_spi_logger/firmware.elf
+
+showAnalyzer usart3
+logLevel -1 gpioPortB.CHIP_SELECT
+logLevel -1 sysbus.spi1.LOGGER_SPI
+
+emulation RunFor "10s"
+
+start
+
+quit

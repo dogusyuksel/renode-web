@@ -1,0 +1,11 @@
+using "/workspace/extendedcpus/stm32f103.repl"
+
+flashMem: Memory.MappedMemory
+    size: 0x80000
+
+LOGGER_SPI: Antmicro.Renode.Peripherals.SPI.LOGGER_SPI @ spi1
+    memory: flashMem
+
+CHIP_SELECT: Antmicro.Renode.Peripherals.Miscellaneous.CS @ gpioPortB
+gpioPortB:
+    6 -> CHIP_SELECT@0
