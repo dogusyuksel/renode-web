@@ -12,7 +12,7 @@ jobs:
   pr-workflow-job:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         github-server-url: https://github.com/dogusyuksel/renode-web.git
         lfs: true
@@ -23,7 +23,7 @@ jobs:
         ./docker_ctl.sh -s -c "cd /workspace && python3 report_creator.py --connections uploads/structure.json --diagram uploads/diagram.png --log uploads/log.txt --out uploads/report.pdf"
 
     - name: Upload video as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: uploads
         path: uploads
