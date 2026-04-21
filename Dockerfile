@@ -38,9 +38,10 @@ RUN pip install google-auth-oauthlib==1.2.2
 RUN pip install google-auth-httplib2==0.2.0
 RUN pip install google-api-python-client==2.172.0
 
-RUN wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 && \
-    tar -xf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
-ENV PATH="/gcc-arm-none-eabi-10.3-2021.10/bin:${PATH}"
+RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz && \
+    tar -xf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz && \
+    rm arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
+ENV PATH="/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin:${PATH}"
 
 # Install Renode
 ARG RENODE_VERSION=1.16.0
