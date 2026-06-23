@@ -33,10 +33,8 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install graphviz
 RUN pip install reportlab
 RUN pip install matplotlib
-RUN pip install google-auth==2.40.3
-RUN pip install google-auth-oauthlib==1.2.2
-RUN pip install google-auth-httplib2==0.2.0
-RUN pip install google-api-python-client==2.172.0
+RUN pip install flask==3.1.2
+RUN pip install jsonify==0.5
 
 RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz && \
     tar -xf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz && \
