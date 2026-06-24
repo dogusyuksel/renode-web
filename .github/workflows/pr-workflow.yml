@@ -17,12 +17,13 @@ jobs:
         github-server-url: https://github.com/dogusyuksel/renode-web.git
         lfs: true
 
-    - name: build
+    - name: executions
       run: |
+        ./setup_env.sh
         ./docker_ctl.sh -b -s -c "cd /workspace && python3 auto_resc_generator.py && renode uploads/example.resc"
         ./docker_ctl.sh -s -c "cd /workspace && python3 report_creator.py --connections uploads/structure.json --diagram uploads/diagram.png --log uploads/log.txt --out uploads/report.pdf"
 
-    - name: Upload video as artifact
+    - name: Upload artifacts
       uses: actions/upload-artifact@v6
       with:
         name: uploads
