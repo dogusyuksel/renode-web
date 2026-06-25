@@ -1,1 +1,0 @@
-/workspace/thirdparty/renode-infrastructure/src/Emulator/Peripherals/Peripherals/I2C/BMA180.cs

@@ -31,6 +31,7 @@ RUN git config --global --add safe.directory /workspace
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 RUN pip install graphviz
+RUN pip install Pillow
 RUN pip install reportlab
 RUN pip install matplotlib
 RUN pip install flask==3.1.2

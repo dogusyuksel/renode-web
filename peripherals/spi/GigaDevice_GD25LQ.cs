@@ -1,1 +1,0 @@
-/workspace/thirdparty/renode-infrastructure/src/Emulator/Peripherals/Peripherals/SPI/GigaDevice_GD25LQ.cs

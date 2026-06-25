@@ -128,7 +128,13 @@ def build_pdf(connections_path, diagram_path, log_path, out_pdf):
     mcu = load_json(connections_path).get("mcu", "unknown")
 
     with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-        log_text = f.read()
+        log_lines = []
+        for i, line in enumerate(f):
+            if i >= 1000:
+                break
+            log_lines.append(line)
+
+    log_text = "".join(log_lines)
     logs = parse_logs(log_text)
 
     # PDF setup

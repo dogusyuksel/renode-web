@@ -19,7 +19,6 @@ resc_string += """
 using sysbus
 mach create
 machine LoadPlatformDescription @/workspace/uploads/example.repl
-sysbus LoadELF @/workspace/uploads/firmware.elf
 sysbus.cpu LogFunctionNames true
 """
 
@@ -37,9 +36,9 @@ for item in data["connections"]:
             resc_string = f'include "/workspace/peripherals/i2c/{item["sensor"]}.cs"\n' + resc_string # write at the beginning
         resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}\n'
         if not os.path.islink(f"/workspace/peripherals/i2c/{item['sensor']}.cs"):
-            repl_string += f'{item["sensor"]}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} 0xAA\n'
+            repl_string += f'{item["sensor"]}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
         else:
-            repl_string += f'{item["sensor"]}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} 0xAA\n'
+            repl_string += f'{item["sensor"]}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
     if item["peripheral"].upper().startswith("SPI") and not it_has_spi:
         it_has_spi = True
         if not os.path.islink(f"/workspace/peripherals/spi/{item['sensor']}.cs"):
@@ -85,7 +84,11 @@ sysbus.{item["port"]}.{item["sensor"]}{str(counter)} PressAndRelease
 
 
 resc_string += """
-emulation RunFor "10s"
+macro reset
+\"\"\"
+    sysbus LoadELF @/workspace/uploads/firmware.elf
+\"\"\"
+runMacro $reset
 start
 """
 
@@ -93,7 +96,6 @@ if it_has_button:
     resc_string += button_substring + "\n"
 
 resc_string += """
-quit
 """
 
 
@@ -136,45 +138,195 @@ remove_duplicates("uploads/example.resc")
 
 from graphviz import Digraph
 
+
 def create_diagram(data):
-    dot = Digraph(comment=f"{data['mcu']} Connections", format="png")
-    dot.attr(rankdir="LR", bgcolor="#f8f9fa", splines="ortho")
 
-    # MCU ortada, daha büyük
-    dot.node("MCU", data["mcu"], shape="box3d", style="filled,bold", fillcolor="#91c9ff", fontsize="18")
+    dot = Digraph(
+        comment=f"{data['mcu']} Connections",
+        format="png"
+    )
 
-    for conn in data["connections"]:
-        sensor_label = conn["sensor"]
+    dot.attr(
+        rankdir="LR",
+        bgcolor="white",
+        splines="spline",
+        nodesep="0.8",
+        ranksep="1.2"
+    )
+
+    # ---------------------------------------------------
+    # MCU
+    # ---------------------------------------------------
+
+    dot.node(
+        "MCU",
+        f"<<B>{data['mcu']}</B>>",
+        shape="box3d",
+        style="filled,bold",
+        fillcolor="#4F8EF7",
+        fontcolor="white",
+        fontsize="22"
+    )
+
+    # ---------------------------------------------------
+    # Connection list
+    # ---------------------------------------------------
+
+    for idx, conn in enumerate(data["connections"]):
+
         peripheral = conn["peripheral"]
+        sensor = conn["sensor"]
 
-        # GPIO ise port/pin bilgisi ekle
-        if peripheral == "GPIO":
-            sensor_label += f"\\n{conn['port']}:{conn['pin']}"
+        periph_node = f"PERIPH_{idx}"
+        sensor_node = f"SENSOR_{idx}"
 
-        # Renk kodu belirle
+        # ---------------------------------
+        # Peripheral label
+        # ---------------------------------
+
+        peripheral_label = peripheral
+
+        if (
+            peripheral.upper() == "GPIO"
+            and conn.get("port")
+            and conn.get("pin")
+        ):
+            peripheral_label = (
+                f"{peripheral}\\n"
+                f"({conn['port']}{conn['pin']})"
+            )
+
+        elif (
+            "I2C" in peripheral.upper()
+            and conn.get("slaveId")
+        ):
+            peripheral_label = (
+                f"{peripheral}\\n"
+                f"(Slave {conn['slaveId']})"
+            )
+
+        # ---------------------------------
+        # Peripheral color
+        # ---------------------------------
+
         color_map = {
-            "GPIO": "#fff3b0",
-            "I2C": "#bde0fe",
-            "SPI": "#b9fbc0",
-            "USART": "#ffd6a5",
-            "CAN": "#caffbf",
-            "ADC": "#ffc6ff"
+            "GPIO": "#FFE699",
+            "I2C": "#BDD7EE",
+            "SPI": "#C6E0B4",
+            "USART": "#F8CBAD",
+            "UART": "#F8CBAD",
+            "CAN": "#D9D2E9",
+            "ADC": "#F4CCCC",
+            "PWM": "#FFD966"
         }
-        color = "#e2e2e2"
-        for key, c in color_map.items():
+
+        color = "#EDEDED"
+
+        for key, value in color_map.items():
             if key in peripheral.upper():
-                color = c
+                color = value
                 break
 
-        # Düğüm oluştur
-        dot.node(sensor_label, sensor_label, shape="ellipse", style="filled", fillcolor=color, fontsize="12")
+        # ---------------------------------
+        # Peripheral node
+        # ---------------------------------
 
-        # Kenar etiketini net göster
-        dot.edge("MCU", sensor_label, label=peripheral, fontsize="10", fontcolor="#555555")
+        dot.node(
+            periph_node,
+            peripheral_label,
+            shape="box",
+            style="rounded,filled",
+            fillcolor=color,
+            fontsize="12"
+        )
+
+        # ---------------------------------
+        # Sensor node
+        # ---------------------------------
+
+        dot.node(
+            sensor_node,
+            sensor,
+            shape="ellipse",
+            style="filled",
+            fillcolor="white",
+            color=color,
+            penwidth="2",
+            fontsize="12"
+        )
+
+        # ---------------------------------
+        # Connections
+        # ---------------------------------
+
+        dot.edge(
+            "MCU",
+            periph_node,
+            color="#555555",
+            penwidth="2"
+        )
+
+        dot.edge(
+            periph_node,
+            sensor_node,
+            color="#888888",
+            penwidth="2"
+        )
+
+    # ---------------------------------------------------
+    # Legend
+    # ---------------------------------------------------
+
+    with dot.subgraph(name="cluster_legend") as c:
+
+        c.attr(
+            label="Legend",
+            fontsize="12"
+        )
+
+        c.node(
+            "L1",
+            "GPIO",
+            shape="box",
+            style="filled",
+            fillcolor="#FFE699"
+        )
+
+        c.node(
+            "L2",
+            "I2C",
+            shape="box",
+            style="filled",
+            fillcolor="#BDD7EE"
+        )
+
+        c.node(
+            "L3",
+            "SPI",
+            shape="box",
+            style="filled",
+            fillcolor="#C6E0B4"
+        )
+
+        c.node(
+            "L4",
+            "USART",
+            shape="box",
+            style="filled",
+            fillcolor="#F8CBAD"
+        )
 
     output_path = "uploads/diagram"
-    dot.render(output_path, view=False)
-    print(f"diagram created: {output_path}.png")
+
+    dot.render(
+        output_path,
+        cleanup=True,
+        view=False
+    )
+
+    print(
+        f"diagram created: {output_path}.png"
+    )
 
 
 create_diagram(data)
