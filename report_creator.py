@@ -127,8 +127,8 @@ def build_pdf(connections_path, diagram_path, log_path, out_pdf):
     connections = load_json(connections_path).get("connections", [])
     mcu = load_json(connections_path).get("mcu", "unknown")
 
+    log_lines = []
     with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-        log_lines = []
         for i, line in enumerate(f):
             if i >= 1000:
                 break

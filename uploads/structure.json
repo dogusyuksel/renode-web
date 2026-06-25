@@ -4,13 +4,25 @@
     {
       "peripheral": "i2c1",
       "sensor": "LOGGER_I2C",
-      "slaveId": "0x55"
+      "slaveId": "0x42"
+    },
+    {
+      "peripheral": "spi1",
+      "sensor": "LOGGER_SPI"
     },
     {
       "peripheral": "gpio",
       "sensor": "CS",
       "port": "gpioPortA",
       "pin": "0"
+    },
+    {
+      "peripheral": "usart1",
+      "sensor": "LOGGER_USART"
+    },
+    {
+      "peripheral": "can",
+      "sensor": "VCAN0"
     }
   ]
 }

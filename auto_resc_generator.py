@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 from graphviz import Digraph
@@ -15,11 +16,16 @@ flashMem: Memory.MappedMemory
     size: 0x10000\n
 """
 
-resc_string += """
+verbose = "false"
+
+if sys.argv[1] == "log_enable":
+    verbose = "true"
+
+resc_string += f"""
 using sysbus
 mach create
 machine LoadPlatformDescription @/workspace/uploads/example.repl
-sysbus.cpu LogFunctionNames true
+sysbus.cpu LogFunctionNames {verbose}
 """
 
 button_substring = ""
@@ -314,6 +320,14 @@ def create_diagram(data):
             shape="box",
             style="filled",
             fillcolor="#F8CBAD"
+        )
+
+        c.node(
+            "L5",
+            "CAN",
+            shape="box",
+            style="filled",
+            fillcolor="#F4CCCC"
         )
 
     output_path = "uploads/diagram"
