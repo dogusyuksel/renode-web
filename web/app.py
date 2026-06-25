@@ -1,66 +1,51 @@
 from flask import Flask, request, jsonify
-import os
-import json
-import subprocess
-import threading
+import os, json, threading, subprocess
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def copy(ts):
+def run_copy(ts):
     try:
-        full_cmd = f"./copy.sh {ts}"
-        subprocess.check_call(full_cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        return f"<pre>Yuklemede hata oluştu:\n{e}</pre>"
+        subprocess.call(f"rm -rf /workspace/{ts} && cp -rf /workspace/web/{ts} /workspace/{ts}", shell=True)
+        subprocess.call(f"cd /workspace && python3 auto_resc_generator.py && cd -", shell=True)
+        subprocess.call(f"cd /workspace && timeout 30 renode uploads/example.resc", shell=True)
+        subprocess.call(f"cd /workspace && python3 report_creator.py --connections uploads/structure.json --diagram uploads/diagram.png --log uploads/log.txt --out uploads/report.pdf", shell=True)
+    except Exception as e:
+        print(e)
 
 @app.route("/")
 def index():
-    # index.html dosyasını serve et
     return app.send_static_file("index.html")
 
 @app.route("/upload", methods=["POST"])
 def upload():
     try:
-        # JSON verisini al
-        data = request.form.get("data")
-        if not data:
-            return jsonify({"error": "No data"}), 400
+        payload = json.loads(request.form.get("data"))
 
-        parsed = json.loads(data)
-        mcu = parsed.get("mcu", "unknown_mcu")
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_dir = UPLOAD_DIR
+        os.makedirs(session_dir, exist_ok=True)
 
-        # ELF dosyası varsa kaydet
-        elf_file = request.files.get("elf")
-        elf_name = None
-        if elf_file:
-            elf_name = "firmware.elf"
-            elf_path = os.path.join(UPLOAD_DIR, elf_name)
-            elf_file.save(elf_path)
+        with open(os.path.join(session_dir,"structure.json"),"w") as f:
+            json.dump(payload,f,indent=2)
 
-        # JSON dosyasını kaydet
-        json_name = "structure.json"
-        json_path = os.path.join(UPLOAD_DIR, json_name)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(parsed, f, indent=2)
+        elf = request.files.get("elf")
+        if elf:
+            filename = secure_filename(elf.filename)
+            elf.save(os.path.join(session_dir, filename))
 
-        threading.Thread(target=copy, args=(ts,)).start()
+        threading.Thread(target=run_copy,args=(session_dir,),daemon=True).start()
 
         return jsonify({
-            "message": "Upload successful",
-            "json_file": json_name,
-            "elf_file": elf_name,
-            "time": ts
-        }), 200
+            "status":"ok",
+            "folder":session_dir
+        })
 
     except Exception as e:
-        print("Upload error:", e)
-        return jsonify({"error": str(e)}), 500
-
+        return jsonify({"error":str(e)}),500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
