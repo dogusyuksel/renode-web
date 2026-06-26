@@ -5,7 +5,7 @@ import json
 # ====== Klasör kökleri ======
 MCU_DIR = "../extendedcpus"
 PERIPH_DIR = "../peripherals"
-OUTPUT_FILE = "mcu_data.json"
+OUTPUT_FILE = "../web/static/mcu_data.json"
 
 
 def parse_perips(file):
