@@ -7,6 +7,7 @@ MCU_DIR = "../extendedcpus"
 PERIPH_DIR = "../peripherals"
 OUTPUT_FILE = "mcu_data.json"
 
+
 def parse_perips(file):
     print(f"Parsing peripherals from {file}")
 
@@ -24,7 +25,7 @@ def parse_perips(file):
             words = line.strip().split(" ")
             if len(words) < 2:
                 continue
-            if words[0][-1] != ':':
+            if words[0][-1] != ":":
                 continue
             key = words[0][:-1]
             if "gpio" in key:
@@ -48,7 +49,7 @@ def parse_perips(file):
                 words = line.strip().split(" ")
                 if len(words) < 2:
                     continue
-                if words[0][-1] != ':':
+                if words[0][-1] != ":":
                     continue
                 key = words[0][:-1]
                 if "gpio" in key:
@@ -68,23 +69,33 @@ def parse_perips(file):
 
     return result
 
+
 def list_files_no_ext(path):
-    """Klasördeki gizli olmayan dosya isimlerini (uzantısız) döndürür"""
     if not os.path.exists(path):
         return []
     namelist = [
         os.path.splitext(f)[0]
         for f in os.listdir(path)
-        if (
-            os.path.isfile(os.path.join(path, f))
-            and not f.startswith('.')        # gizli dosyaları hariç tut
-        )
+        if (os.path.isfile(os.path.join(path, f)) and not f.startswith("."))
     ]
-    
+
     return namelist
 
-def build_json_structure(result, mcu_name, ports, pins, i2c_list, spi_list, adc_list, gpio_list, can_list, uart_list, usart_list):
-    mcu_name_fixed = mcu_name.split('.', 1)[0]
+
+def build_json_structure(
+    result,
+    mcu_name,
+    ports,
+    pins,
+    i2c_list,
+    spi_list,
+    adc_list,
+    gpio_list,
+    can_list,
+    uart_list,
+    usart_list,
+):
+    mcu_name_fixed = mcu_name.split(".", 1)[0]
 
     peripherals = {}
 
@@ -131,11 +142,7 @@ def build_json_structure(result, mcu_name, ports, pins, i2c_list, spi_list, adc_
             peripherals[usart] = devices
 
     # MCU verisini oluştur
-    result[mcu_name_fixed] = {
-        "ports": ports,
-        "pins": pins,
-        "peripherals": peripherals
-    }
+    result[mcu_name_fixed] = {"ports": ports, "pins": pins, "peripherals": peripherals}
 
     return result
 
@@ -162,7 +169,19 @@ if __name__ == "__main__":
         uart = perips["uart"]
         usart = perips["usart"]
 
-        build_json_structure(result, file, ports, pins, i2c, spi, adc_list, gpio_list, can_list, uart, usart)
+        build_json_structure(
+            result,
+            file,
+            ports,
+            pins,
+            i2c,
+            spi,
+            adc_list,
+            gpio_list,
+            can_list,
+            uart,
+            usart,
+        )
 
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
     json.dump(result, f, indent=2, ensure_ascii=False)
