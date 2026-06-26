@@ -1,9 +1,3 @@
-uploads/log.txt*
-uploads/diagram*
-uploads/*.resc
-uploads/*.repl
-uploads/*.png
-uploads/detected_peripherals.json
-uploads/report.pdf
+uploads/*
 web/uploads/*
 firmwares/stm32f103_renode/build

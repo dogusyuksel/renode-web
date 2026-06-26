@@ -15,15 +15,20 @@ flashMem: Memory.MappedMemory
     size: 0x10000\n
 """
 
-resc_string += """
+resc_string += '''
+include "/workspace/support/STM32F103_RCC.cs"
+include "/workspace/support/STM32L4_RCC.cs"
+include "/workspace/support/STML4_I2C.cs"
+
 using sysbus
 mach create
 machine LoadPlatformDescription @/workspace/uploads/example.repl
-sysbus.cpu LogFunctionNames true
-"""
+sysbus.cpu LogFunctionNames false
+'''
 
 button_substring = ""
 counter = 0
+telnet_port = 1234
 it_has_i2c = False
 it_has_spi = False
 it_has_led = False
@@ -81,9 +86,13 @@ sysbus.{item["port"]}.{item["sensor"]}{str(counter)} PressAndRelease
 
     if item["peripheral"].upper().startswith("UART") or item["peripheral"].upper().startswith("USART"):
         resc_string += f'showAnalyzer {item["peripheral"].lower()}\n'
+        resc_string += f'emulation CreateServerSocketTerminal {telnet_port} "{item["peripheral"].upper()}" false\n'
+        resc_string += f'connector Connect sysbus.{item["peripheral"].lower()} {item["peripheral"].upper()}\n'
+        telnet_port = telnet_port + 1
 
 
 resc_string += """
+machine StartGdbServer 3333 true
 macro reset
 \"\"\"
     sysbus LoadELF @/workspace/uploads/firmware.elf
