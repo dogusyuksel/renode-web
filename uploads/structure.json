@@ -1,9 +1,0 @@
-{
-  "mcu": "stm32f103",
-  "connections": [
-    {
-      "peripheral": "usart3",
-      "sensor": "LOGGER_USART"
-    }
-  ]
-}
