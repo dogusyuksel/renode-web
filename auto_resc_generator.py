@@ -9,6 +9,20 @@ repl_string = ""
 with open("./uploads/structure.json", "r") as f:
     data = json.load(f)
 
+def list_files_no_ext(path):
+    if not os.path.exists(path):
+        return []
+    namelist = [
+        os.path.join(path, os.path.splitext(f)[0])
+        for f in os.listdir(path)
+        if (
+            os.path.isfile(os.path.join(path, f))
+            and not f.startswith('.')
+        )
+    ]
+
+    return namelist
+
 # lets create both files' content
 repl_string += f"""using "/workspace/extendedcpus/{data["mcu"].lower()}.repl"\n"""
 repl_string += """
@@ -16,16 +30,16 @@ flashMem: Memory.MappedMemory
     size: 0x10000\n
 """
 
+support_files = list_files_no_ext('/workspace/support')
+for supports in support_files:
+    resc_string += f'include "{supports}.cs"\n'
+
 verbose = "false"
 
 if sys.argv[1] == "log_enable":
     verbose = "true"
 
 resc_string += f"""
-include "/workspace/support/STM32F103_RCC.cs"
-include "/workspace/support/STM32L4_RCC.cs"
-include "/workspace/support/STML4_I2C.cs"
-
 using sysbus
 mach create
 machine LoadPlatformDescription @/workspace/uploads/example.repl

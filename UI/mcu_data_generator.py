@@ -2,7 +2,6 @@ import os
 import json
 
 
-# ====== Klasör kökleri ======
 MCU_DIR = "../extendedcpus"
 PERIPH_DIR = "../peripherals"
 OUTPUT_FILE = "../web/static/mcu_data.json"
@@ -99,49 +98,41 @@ def build_json_structure(
 
     peripherals = {}
 
-    # I2C cihazlarını eşleştir
     for i2c in i2c_list:
         sensors = list_files_no_ext(os.path.join(PERIPH_DIR, "i2c"))
         if sensors:
             peripherals[i2c] = sensors
 
-    # SPI cihazlarını eşleştir
     for spi in spi_list:
         sensors = list_files_no_ext(os.path.join(PERIPH_DIR, "spi"))
         if sensors:
             peripherals[spi] = sensors
 
-    # GPIO cihazları
     for gpio in gpio_list:
         devices = list_files_no_ext(os.path.join(PERIPH_DIR, "gpio"))
         if devices:
             peripherals[gpio] = devices
 
-    # ADC cihazları
     for adc in adc_list:
         devices = list_files_no_ext(os.path.join(PERIPH_DIR, "adc"))
         if devices:
             peripherals[adc] = devices
 
-    # can cihazları
     for can in can_list:
         devices = list_files_no_ext(os.path.join(PERIPH_DIR, "can"))
         if devices:
             peripherals[can] = devices
 
-    # uart cihazları
     for uart in uart_list:
         devices = list_files_no_ext(os.path.join(PERIPH_DIR, "uart"))
         if devices:
             peripherals[uart] = devices
 
-    # uart cihazları
     for usart in usart_list:
         devices = list_files_no_ext(os.path.join(PERIPH_DIR, "usart"))
         if devices:
             peripherals[usart] = devices
 
-    # MCU verisini oluştur
     result[mcu_name_fixed] = {"ports": ports, "pins": pins, "peripherals": peripherals}
 
     return result
@@ -158,7 +149,6 @@ if __name__ == "__main__":
         perips = parse_perips(file)
         # print(perips)
 
-        # ====== Elindeki sabit listeler ======
         ports = perips["gpio"]
         pins = list(range(32))
         i2c = perips["i2c"]
