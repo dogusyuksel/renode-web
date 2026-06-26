@@ -21,7 +21,7 @@ verbose = "false"
 if sys.argv[1] == "log_enable":
     verbose = "true"
 
-resc_string += '''
+resc_string += f'''
 include "/workspace/support/STM32F103_RCC.cs"
 include "/workspace/support/STM32L4_RCC.cs"
 include "/workspace/support/STML4_I2C.cs"
@@ -343,7 +343,7 @@ def create_diagram(data):
 
     dot.render(
         output_path,
-        cleanup=True,
+        # cleanup=True,
         view=False
     )
 

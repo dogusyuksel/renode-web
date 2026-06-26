@@ -10,7 +10,7 @@ if [ "$#" -eq 1 ]; then
     fi
 fi
 
-BASENAME="dyshell"
+BASENAME="renode_web"
 preferred_name=$BASENAME":latest"
 
 # Default values:
@@ -37,7 +37,7 @@ shift "$(( OPTIND - 1 ))"
 printf 'Option -c: %s\n' "$command"
 
 if [ "$build_docker" = "true" ]; then
-    docker build -t $preferred_name .
+    docker build --network=host -t $preferred_name .
 fi
 
 docker images | grep $BASENAME

@@ -27,8 +27,7 @@ def run_copy(ts, test_duration, verbose_log):
 
         verbose_flag = "log_enable" if verbose_log else "log_disable"
         subprocess.call(f"cd /workspace && python3 auto_resc_generator.py {verbose_flag} &", shell=True)
-        subprocess.call(f"cd /workspace && python3 auto_resc_generator.py {verbose_flag} &", shell=True)
-        surec = subprocess.Popen(
+        surec1 = subprocess.Popen(
             "cd /workspace && renode uploads/example.resc",
             shell=True,
             start_new_session=True
@@ -36,11 +35,11 @@ def run_copy(ts, test_duration, verbose_log):
         time.sleep(15)
         # run custom test here
         if os.path.exists(f"/workspace/{ts}/custom_test.py"):
-            subprocess.call(f"cd /workspace/{ts} && python3 custom_test.py", shell=True)
+            subprocess.call(f"cd /workspace/{ts} && python3 custom_test.py > /workspace/{ts}/custom_test_report.txt", shell=True)
 
         time.sleep(int(int(test_duration) - 15))
         try:
-            os.killpg(os.getpgid(surec.pid), signal.SIGKILL)
+            os.killpg(os.getpgid(surec1.pid), signal.SIGKILL)
         except Exception as e:
             print(f"{e}")
 
@@ -63,7 +62,6 @@ def upload():
         with open(os.path.join(session_dir,"structure.json"),"w") as f:
             json.dump(payload,f,indent=2)
 
-        # Test konfigürasyonunu ayrı bir dosyaya kaydet
         test_config = {
             "test_duration": int(request.form.get("testDuration", 30)),
             "verbose_log": request.form.get("verboseLog") == "true"
