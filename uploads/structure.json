@@ -2,15 +2,8 @@
   "mcu": "stm32f103",
   "connections": [
     {
-      "peripheral": "i2c1",
-      "sensor": "LOGGER_I2C",
-      "slaveId": "0x55"
-    },
-    {
-      "peripheral": "gpio",
-      "sensor": "CS",
-      "port": "gpioPortA",
-      "pin": "0"
+      "peripheral": "usart3",
+      "sensor": "LOGGER_USART"
     }
   ]
 }

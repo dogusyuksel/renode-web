@@ -52,6 +52,8 @@ can2: CAN.STMCAN @ sysbus <0x40006800, +0x400>
     [0-3] -> nvic@[63-66]
     master: can1
 
+pwr: Miscellaneous.STM32_PWR @ sysbus 0x40007000
+
 exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
     numberOfOutputLines: 19
     [0-4] -> nvic@[6-10]
@@ -86,6 +88,15 @@ gpioPortF: GPIOPort.STM32F1GPIOPort @ sysbus <0x40011C00, +0x400>
 
 gpioPortG: GPIOPort.STM32F1GPIOPort @ sysbus <0x40012000, +0x400>
     [0-15] -> exti@[0-15]
+
+rcc: Miscellaneous.STM32F103_RCC @ sysbus 0x40021000
+    rtc: rtc
+    systick: nvic
+    hseFrequency: 24000000
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
+    AlarmIRQ->nvic@41 // Through EXT1 line 18
+    WakeupIRQ->nvic@3
 
 sysbus:
     init:
