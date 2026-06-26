@@ -57,9 +57,9 @@
         "LOGGER_SPI"
       ],
       "gpio": [
+        "USERLED",
         "BUTTON",
-        "CS",
-        "USERLED"
+        "CS"
       ],
       "can": [
         "VCAN0",
@@ -78,6 +78,92 @@
         "LOGGER_USART"
       ],
       "usart5": [
+        "LOGGER_USART"
+      ]
+    }
+  },
+  "stm32l451": {
+    "ports": [
+      "gpioa",
+      "gpiob",
+      "gpioc",
+      "gpioh"
+    ],
+    "pins": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "peripherals": {
+      "i2c1": [
+        "LOGGER_I2C"
+      ],
+      "i2c2": [
+        "LOGGER_I2C"
+      ],
+      "i2c3": [
+        "LOGGER_I2C"
+      ],
+      "i2c4": [
+        "LOGGER_I2C"
+      ],
+      "spi1": [
+        "LOGGER_SPI"
+      ],
+      "spi2": [
+        "LOGGER_SPI"
+      ],
+      "spi3": [
+        "LOGGER_SPI"
+      ],
+      "gpio": [
+        "USERLED",
+        "BUTTON",
+        "CS"
+      ],
+      "can": [
+        "VCAN0",
+        "VCAN1"
+      ],
+      "uart4": [
+        "LOGGER_UART"
+      ],
+      "usart1": [
+        "LOGGER_USART"
+      ],
+      "usart2": [
+        "LOGGER_USART"
+      ],
+      "usart3": [
         "LOGGER_USART"
       ]
     }
