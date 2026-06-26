@@ -17,6 +17,7 @@ flashMem: Memory.MappedMemory
 
 resc_string += '''
 include "/workspace/support/STM32F103_RCC.cs"
+include "/workspace/support/STM32L4_RCC.cs"
 include "/workspace/support/STML4_I2C.cs"
 
 using sysbus
