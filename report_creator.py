@@ -187,9 +187,12 @@ def build_pdf(connections_path, diagram_path, log_path, out_pdf):
         story.append(Paragraph(html, ParagraphStyle("LogLine", fontSize=9, leading=11)))
     # done
 
-    with open('/workspace/upload/custom_test_report.txt', 'r', encoding='utf-8') as dosya:
-        content_of_log = dosya.read()
-        story.append(Paragraph(f"{content_of_log}", styles["Normal"]))
+    story.append(PageBreak())
+    # 6. Custom Logs
+    story.append(Paragraph("Custom Logs", styles["Heading2"]))
+    with open('/workspace/uploads/custom_test_report.txt', 'r', encoding='utf-8') as myfile:
+        for aline in myfile:
+            story.append(Paragraph(f"{aline}", styles["Normal"]))
 
     doc.build(story)
     print(f"PDF generated: {out_pdf}")

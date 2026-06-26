@@ -69,7 +69,6 @@ def parse_perips(file):
     return result
 
 def list_files_no_ext(path):
-    """Klasördeki gizli olmayan dosya isimlerini (uzantısız) döndürür"""
     if not os.path.exists(path):
         return []
     namelist = [
@@ -77,7 +76,7 @@ def list_files_no_ext(path):
         for f in os.listdir(path)
         if (
             os.path.isfile(os.path.join(path, f))
-            and not f.startswith('.')        # gizli dosyaları hariç tut
+            and not f.startswith('.')
         )
     ]
     

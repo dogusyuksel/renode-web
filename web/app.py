@@ -7,6 +7,8 @@ import time
 import subprocess
 import signal
 
+calmdown_wait = 15
+
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 UPLOAD_DIR = "uploads"
@@ -26,19 +28,27 @@ def run_copy(ts, test_duration, verbose_log):
             shutil.copytree(f"/workspace/web/{ts}", f"/workspace/{ts}")
 
         verbose_flag = "log_enable" if verbose_log else "log_disable"
-        subprocess.call(f"cd /workspace && python3 auto_resc_generator.py {verbose_flag} &", shell=True)
+        subprocess.call(f"cd /workspace && python3 auto_resc_generator.py {verbose_flag}", shell=True)
+
+        test_duration_int = int(test_duration)
+
         surec1 = subprocess.Popen(
             "cd /workspace && renode uploads/example.resc",
             shell=True,
             start_new_session=True
         )
-        time.sleep(15)
+        time.sleep(calmdown_wait)
         # run custom test here
         if os.path.exists(f"/workspace/{ts}/custom_test.py"):
-            subprocess.call(f"cd /workspace/{ts} && python3 custom_test.py > /workspace/{ts}/custom_test_report.txt", shell=True)
+            surec2 = subprocess.Popen(
+                f"cd /workspace/{ts} && python3 -u custom_test.py > /workspace/{ts}/custom_test_report.txt",
+                shell=True,
+                start_new_session=True
+            )
 
-        time.sleep(int(int(test_duration) - 15))
+        time.sleep(int(test_duration_int - calmdown_wait))
         try:
+            os.killpg(os.getpgid(surec2.pid), signal.SIGKILL)
             os.killpg(os.getpgid(surec1.pid), signal.SIGKILL)
         except Exception as e:
             print(f"{e}")
@@ -68,9 +78,11 @@ def upload():
         }
 
         custom_script = request.form.get("customScript")
-        if custom_script:
-            with open(os.path.join(session_dir,"custom_test.py"),"w") as f:
-                f.write(custom_script)
+        if custom_script is None:
+            custom_script = str('print("No custom command executed!")')
+
+        with open(os.path.join(session_dir,"custom_test.py"),"w") as f:
+            f.write(custom_script)
 
         elf = request.files.get("elf")
         if elf:

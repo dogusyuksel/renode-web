@@ -143,7 +143,6 @@ def remove_duplicates(file_path):
             unique_lines.append(line)
             seen.add(line)
 
-    # Aynı dosyaya tekrar yaz
     with open(file_path, "w", encoding="utf-8") as f:
         f.writelines(unique_lines)
 
