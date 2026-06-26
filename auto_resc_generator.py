@@ -10,7 +10,7 @@ with open("./uploads/structure.json", "r") as f:
     data = json.load(f)
 
 # lets create both files' content
-repl_string += f'''using "/workspace/extendedcpus/{data["mcu"].lower()}.repl"\n'''
+repl_string += f"""using "/workspace/extendedcpus/{data["mcu"].lower()}.repl"\n"""
 repl_string += """
 flashMem: Memory.MappedMemory
     size: 0x10000\n
@@ -21,7 +21,7 @@ verbose = "false"
 if sys.argv[1] == "log_enable":
     verbose = "true"
 
-resc_string += f'''
+resc_string += f"""
 include "/workspace/support/STM32F103_RCC.cs"
 include "/workspace/support/STM32L4_RCC.cs"
 include "/workspace/support/STML4_I2C.cs"
@@ -30,7 +30,7 @@ using sysbus
 mach create
 machine LoadPlatformDescription @/workspace/uploads/example.repl
 sysbus.cpu LogFunctionNames {verbose}
-'''
+"""
 
 button_substring = ""
 counter = 0
@@ -44,7 +44,10 @@ for item in data["connections"]:
     if item["peripheral"].upper().startswith("I2C") and not it_has_i2c:
         it_has_i2c = True
         if not os.path.islink(f"/workspace/peripherals/i2c/{item['sensor']}.cs"):
-            resc_string = f'include "/workspace/peripherals/i2c/{item["sensor"]}.cs"\n' + resc_string # write at the beginning
+            resc_string = (
+                f'include "/workspace/peripherals/i2c/{item["sensor"]}.cs"\n'
+                + resc_string
+            )  # write at the beginning
         resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}\n'
         if not os.path.islink(f"/workspace/peripherals/i2c/{item['sensor']}.cs"):
             repl_string += f'{item["sensor"]}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
@@ -53,8 +56,13 @@ for item in data["connections"]:
     if item["peripheral"].upper().startswith("SPI") and not it_has_spi:
         it_has_spi = True
         if not os.path.islink(f"/workspace/peripherals/spi/{item['sensor']}.cs"):
-            resc_string = f'include "/workspace/peripherals/spi/{item["sensor"]}.cs"\n' + resc_string # write at the beginning
-        resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}\n'
+            resc_string = (
+                f'include "/workspace/peripherals/spi/{item["sensor"]}.cs"\n'
+                + resc_string
+            )  # write at the beginning
+        resc_string += (
+            f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}\n'
+        )
         if not os.path.islink(f"/workspace/peripherals/spi/{item['sensor']}.cs"):
             repl_string += f"""
 {item["sensor"]}: Antmicro.Renode.Peripherals.SPI.{item["sensor"]} @ {item["peripheral"].lower()}
@@ -67,7 +75,9 @@ for item in data["connections"]:
 """
     if item["peripheral"].upper().startswith("GPIO"):
         counter += 1
-        resc_string = f'include "/workspace/peripherals/gpio/{item["sensor"]}.cs"\n' + resc_string # write at the beginning
+        resc_string = (
+            f'include "/workspace/peripherals/gpio/{item["sensor"]}.cs"\n' + resc_string
+        )  # write at the beginning
         if item["sensor"].upper().startswith("LED"):
             it_has_led = True
         if item["sensor"].upper().startswith("CS"):
@@ -83,14 +93,18 @@ sysbus.{item["port"]}.{item["sensor"]}{str(counter)} PressAndRelease
     -> {item["port"]}@{item["pin"]}
 """
         else:
-            resc_string += f'logLevel -1 {item["port"]}.{item["sensor"]}{str(counter)}\n'
+            resc_string += (
+                f'logLevel -1 {item["port"]}.{item["sensor"]}{str(counter)}\n'
+            )
             repl_string += f"""
 {item["sensor"]}{str(counter)}: Antmicro.Renode.Peripherals.Miscellaneous.{item["sensor"]} @ {item["port"]}
 {item["port"]}:
     {item["pin"]} -> {item["sensor"]}{str(counter)}@0
 """
 
-    if item["peripheral"].upper().startswith("UART") or item["peripheral"].upper().startswith("USART"):
+    if item["peripheral"].upper().startswith("UART") or item[
+        "peripheral"
+    ].upper().startswith("USART"):
         resc_string += f'showAnalyzer {item["peripheral"].lower()}\n'
         resc_string += f'emulation CreateServerSocketTerminal {telnet_port} "{item["peripheral"].upper()}" false\n'
         resc_string += f'connector Connect sysbus.{item["peripheral"].lower()} {item["peripheral"].upper()}\n'
@@ -114,9 +128,13 @@ resc_string += """
 """
 
 
-resc_string = """
+resc_string = (
+    """
 logFile @/workspace/uploads/log.txt
-""" + resc_string + "\n"
+"""
+    + resc_string
+    + "\n"
+)
 
 print(repl_string)
 print("------------------------------------------------------------")
@@ -127,6 +145,7 @@ with open("uploads/example.repl", "w") as f:
 
 with open("uploads/example.resc", "w") as f:
     f.write(resc_string)
+
 
 def remove_duplicates(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
@@ -155,17 +174,10 @@ from graphviz import Digraph
 
 def create_diagram(data):
 
-    dot = Digraph(
-        comment=f"{data['mcu']} Connections",
-        format="png"
-    )
+    dot = Digraph(comment=f"{data['mcu']} Connections", format="png")
 
     dot.attr(
-        rankdir="LR",
-        bgcolor="white",
-        splines="spline",
-        nodesep="0.8",
-        ranksep="1.2"
+        rankdir="LR", bgcolor="white", splines="spline", nodesep="0.8", ranksep="1.2"
     )
 
     # ---------------------------------------------------
@@ -179,7 +191,7 @@ def create_diagram(data):
         style="filled,bold",
         fillcolor="#4F8EF7",
         fontcolor="white",
-        fontsize="22"
+        fontsize="22",
     )
 
     # ---------------------------------------------------
@@ -200,24 +212,11 @@ def create_diagram(data):
 
         peripheral_label = peripheral
 
-        if (
-            peripheral.upper() == "GPIO"
-            and conn.get("port")
-            and conn.get("pin")
-        ):
-            peripheral_label = (
-                f"{peripheral}\\n"
-                f"({conn['port']}{conn['pin']})"
-            )
+        if peripheral.upper() == "GPIO" and conn.get("port") and conn.get("pin"):
+            peripheral_label = f"{peripheral}\\n" f"({conn['port']}{conn['pin']})"
 
-        elif (
-            "I2C" in peripheral.upper()
-            and conn.get("slaveId")
-        ):
-            peripheral_label = (
-                f"{peripheral}\\n"
-                f"(Slave {conn['slaveId']})"
-            )
+        elif "I2C" in peripheral.upper() and conn.get("slaveId"):
+            peripheral_label = f"{peripheral}\\n" f"(Slave {conn['slaveId']})"
 
         # ---------------------------------
         # Peripheral color
@@ -231,7 +230,7 @@ def create_diagram(data):
             "UART": "#F8CBAD",
             "CAN": "#D9D2E9",
             "ADC": "#F4CCCC",
-            "PWM": "#FFD966"
+            "PWM": "#FFD966",
         }
 
         color = "#EDEDED"
@@ -251,7 +250,7 @@ def create_diagram(data):
             shape="box",
             style="rounded,filled",
             fillcolor=color,
-            fontsize="12"
+            fontsize="12",
         )
 
         # ---------------------------------
@@ -266,26 +265,16 @@ def create_diagram(data):
             fillcolor="white",
             color=color,
             penwidth="2",
-            fontsize="12"
+            fontsize="12",
         )
 
         # ---------------------------------
         # Connections
         # ---------------------------------
 
-        dot.edge(
-            "MCU",
-            periph_node,
-            color="#555555",
-            penwidth="2"
-        )
+        dot.edge("MCU", periph_node, color="#555555", penwidth="2")
 
-        dot.edge(
-            periph_node,
-            sensor_node,
-            color="#888888",
-            penwidth="2"
-        )
+        dot.edge(periph_node, sensor_node, color="#888888", penwidth="2")
 
     # ---------------------------------------------------
     # Legend
@@ -293,62 +282,27 @@ def create_diagram(data):
 
     with dot.subgraph(name="cluster_legend") as c:
 
-        c.attr(
-            label="Legend",
-            fontsize="12"
-        )
+        c.attr(label="Legend", fontsize="12")
 
-        c.node(
-            "L1",
-            "GPIO",
-            shape="box",
-            style="filled",
-            fillcolor="#FFE699"
-        )
+        c.node("L1", "GPIO", shape="box", style="filled", fillcolor="#FFE699")
 
-        c.node(
-            "L2",
-            "I2C",
-            shape="box",
-            style="filled",
-            fillcolor="#BDD7EE"
-        )
+        c.node("L2", "I2C", shape="box", style="filled", fillcolor="#BDD7EE")
 
-        c.node(
-            "L3",
-            "SPI",
-            shape="box",
-            style="filled",
-            fillcolor="#C6E0B4"
-        )
+        c.node("L3", "SPI", shape="box", style="filled", fillcolor="#C6E0B4")
 
-        c.node(
-            "L4",
-            "USART",
-            shape="box",
-            style="filled",
-            fillcolor="#F8CBAD"
-        )
+        c.node("L4", "USART", shape="box", style="filled", fillcolor="#F8CBAD")
 
-        c.node(
-            "L5",
-            "CAN",
-            shape="box",
-            style="filled",
-            fillcolor="#F4CCCC"
-        )
+        c.node("L5", "CAN", shape="box", style="filled", fillcolor="#F4CCCC")
 
     output_path = "uploads/diagram"
 
     dot.render(
         output_path,
         # cleanup=True,
-        view=False
+        view=False,
     )
 
-    print(
-        f"diagram created: {output_path}.png"
-    )
+    print(f"diagram created: {output_path}.png")
 
 
 create_diagram(data)

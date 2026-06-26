@@ -2,14 +2,12 @@ import time
 import socket
 import threading
 
+
 class ModbusClient:
     def __init__(self, host="localhost", port=1234):
         self.sock = socket.create_connection((host, port))
 
-        self.rx_thread = threading.Thread(
-            target=self._rx_loop,
-            daemon=True
-        )
+        self.rx_thread = threading.Thread(target=self._rx_loop, daemon=True)
         self.rx_thread.start()
 
     def _rx_loop(self):

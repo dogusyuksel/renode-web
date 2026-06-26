@@ -1,309 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Easy FW Test for ARM</title>
-<style>
-body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0}
-.container{max-width:1300px;margin:auto;padding:20px}
-.card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.1);margin-bottom:16px}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.col{flex:1;min-width:250px}
-input,select,button{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-button{background:#2563eb;color:white;border:none;cursor:pointer}
-button:hover{background:#1d4ed8}
-#dropzone{border:2px dashed #2563eb;padding:30px;text-align:center;border-radius:10px}
-.connection{padding:8px;background:#eef4ff;border-left:4px solid #2563eb;margin:6px 0}
-svg{width:100%;height:500px;background:white}
-.checkbox-wrapper{display:flex;align-items:center;margin-top:10px}
-.checkbox-wrapper input[type="checkbox"]{width:auto;margin-right:8px}
-textarea{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-family:monospace;min-height:120px}
-</style>
-</head>
-<body>
-<div class="container">
-<div class="card"><h2>Easy FW Test for ARM</h2></div>
-
-<div class="card">
-<div id="dropzone">Drop ELF File Here</div>
-<input type="file" id="elfInput" accept=".elf">
-</div>
-
-<div class="card">
-<div class="row">
-<div class="col">
-<label>MCU</label>
-<select id="mcu"></select>
-
-<label>Peripheral</label>
-<select id="peripheral"></select>
-
-<label>Sensor</label>
-<select id="sensor"></select>
-
-<div id="i2cDiv" style="display:none">
-<label>I2C Slave Address</label>
-<input id="slaveId" placeholder="0x68">
-</div>
-
-<label>Port</label>
-<select id="port" disabled></select>
-
-<label>Pin</label>
-<select id="pin" disabled></select>
-
-<button id="addBtn">Add Connection</button>
-</div>
-
-<div class="col">
-<h3>Connections</h3>
-<div id="connections"></div>
-</div>
-</div>
-</div>
-
-<div class="card">
-<h3>Test Configuration</h3>
-<div class="row">
-<div class="col">
-<label>Total Test Duration</label>
-<select id="testDuration">
-<option value="30">30 seconds</option>
-<option value="60">1 minute</option>
-<option value="90">1.5 minutes</option>
-<option value="120">2 minutes</option>
-<option value="150">2.5 minutes</option>
-<option value="180">3 minutes</option>
-<option value="210">3.5 minutes</option>
-<option value="240">4 minutes</option>
-<option value="270">4.5 minutes</option>
-<option value="300">5 minutes</option>
-</select>
-
-<div class="checkbox-wrapper">
-<input type="checkbox" id="verboseLog">
-<label for="verboseLog">Enable Verbose Logging</label>
-</div>
-</div>
-
-<div class="col">
-<label>Custom Python Test Script (optional)</label>
-<textarea id="pythonScript" placeholder="# Enter your custom Python test script here
-# Example:
-# def custom_test():
-#     print('Running custom test')
-#     return True"></textarea>
-</div>
-</div>
-</div>
-
-<div class="card">
-<h3>Block Diagram</h3>
-<svg id="diagram"></svg>
-</div>
-
-<button id="applyBtn">Apply</button>
-</div>
-
-<script>
-let data={};
-let connections=[];
-
-async function loadData(){
- const r=await fetch("mcu_data.json");
- data=await r.json();
-
- let m=document.getElementById("mcu");
- m.innerHTML='<option value="">Select MCU</option>';
- Object.keys(data).forEach(v=>m.innerHTML+=`<option>${v}</option>`);
-}
-loadData();
-
-const mcu=document.getElementById("mcu");
-const peripheral=document.getElementById("peripheral");
-const sensor=document.getElementById("sensor");
-
-mcu.onchange=()=>{
- peripheral.innerHTML='<option value="">Select Peripheral</option>';
- let p=data[mcu.value].peripherals;
- Object.keys(p).forEach(v=>peripheral.innerHTML+=`<option>${v}</option>`);
-
- let port=document.getElementById("port");
- let pin=document.getElementById("pin");
-
- port.innerHTML="";
- pin.innerHTML="";
- port.disabled=true;
- pin.disabled=true;
-
- data[mcu.value].ports.forEach(v=>port.innerHTML+=`<option>${v}</option>`);
- data[mcu.value].pins.forEach(v=>pin.innerHTML+=`<option>${v}</option>`);
-};
-
-peripheral.onchange=()=>{
-
-    sensor.innerHTML='<option value="">Select Sensor</option>';
-
-    data[mcu.value].peripherals[peripheral.value].forEach(v=>{
-        sensor.innerHTML+=`<option>${v}</option>`;
-    });
-
-    const port=document.getElementById("port");
-    const pin=document.getElementById("pin");
-
-    const p=peripheral.value.toUpperCase();
-
-    if(p==="GPIO"){
-        port.disabled=false;
-        pin.disabled=false;
-    }
-    else{
-        port.disabled=true;
-        pin.disabled=true;
-
-        port.selectedIndex=0;
-        pin.selectedIndex=0;
-    }
-
-    document.getElementById("i2cDiv").style.display=
-        p.includes("I2C") ? "block" : "none";
-};
-
-document.getElementById("addBtn").onclick=()=>{
-let c={
- peripheral:peripheral.value,
- sensor:sensor.value
-};
-
-if(peripheral.value.toUpperCase()==="GPIO"){
-    c.port=document.getElementById("port").value;
-    c.pin=document.getElementById("pin").value;
-}
-
-if(peripheral.value.toUpperCase().includes("I2C")){
-    c.slaveId=document.getElementById("slaveId").value;
-}
- connections.push(c);
- renderConnections();
- draw();
-};
-
-function renderConnections(){
-
-    let div = document.getElementById("connections");
-    div.innerHTML = "";
-
-    connections.forEach(c=>{
-
-        let peripheralLabel = c.peripheral;
-
-        // GPIO -> GPIO (PA1)
-        if(
-            c.peripheral &&
-            c.peripheral.toUpperCase() === "GPIO" &&
-            c.port &&
-            c.pin
-        ){
-            peripheralLabel += ` (${c.port}${c.pin})`;
-        }
-
-        // I2C -> I2C1 (0x68)
-        if(
-            c.peripheral &&
-            c.peripheral.toUpperCase().includes("I2C") &&
-            c.slaveId
-        ){
-            peripheralLabel += ` (${c.slaveId})`;
-        }
-
-        div.innerHTML += `
-            <div class="connection">
-                ${peripheralLabel} → ${c.sensor}
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Easy FW Test for ARM</title>
+      <style>
+         body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0}
+         .container{max-width:1300px;margin:auto;padding:20px}
+         .card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.1);margin-bottom:16px}
+         .row{display:flex;gap:12px;flex-wrap:wrap}
+         .col{flex:1;min-width:250px}
+         input,select,button{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+         button{background:#2563eb;color:white;border:none;cursor:pointer}
+         button:hover{background:#1d4ed8}
+         #dropzone{border:2px dashed #2563eb;padding:30px;text-align:center;border-radius:10px}
+         .connection{padding:8px;background:#eef4ff;border-left:4px solid #2563eb;margin:6px 0}
+         svg{width:100%;height:500px;background:white}
+         .checkbox-wrapper{display:flex;align-items:center;margin-top:10px}
+         .checkbox-wrapper input[type="checkbox"]{width:auto;margin-right:8px}
+         textarea{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-family:monospace;min-height:120px}
+      </style>
+   </head>
+   <body>
+      <div class="container">
+         <div class="card">
+            <h2>Easy FW Test for ARM</h2>
+         </div>
+         <div class="card">
+            <div id="dropzone">Drop ELF File Here</div>
+            <input type="file" id="elfInput" accept=".elf">
+         </div>
+         <div class="card">
+            <div class="row">
+               <div class="col">
+                  <label>MCU</label>
+                  <select id="mcu"></select>
+                  <label>Peripheral</label>
+                  <select id="peripheral"></select>
+                  <label>Sensor</label>
+                  <select id="sensor"></select>
+                  <div id="i2cDiv" style="display:none">
+                     <label>I2C Slave Address</label>
+                     <input id="slaveId" placeholder="0x68">
+                  </div>
+                  <label>Port</label>
+                  <select id="port" disabled></select>
+                  <label>Pin</label>
+                  <select id="pin" disabled></select>
+                  <button id="addBtn">Add Connection</button>
+               </div>
+               <div class="col">
+                  <h3>Connections</h3>
+                  <div id="connections"></div>
+               </div>
             </div>
-        `;
-    });
-}
-
-function draw(){
- let svg=document.getElementById("diagram");
- svg.innerHTML="";
- let y=80;
-
- svg.innerHTML+=`<rect x="350" y="20" width="200" height="50" fill="#dbeafe"/>
- <text x="450" y="50" text-anchor="middle">${mcu.value}</text>`;
-
- connections.forEach(c=>{
-    let peripheralLabel = c.peripheral;
-
-// GPIO ise GPIO (PA1)
-if(
-    c.peripheral &&
-    c.peripheral.toUpperCase() === "GPIO" &&
-    c.port &&
-    c.pin
-){
-    peripheralLabel = `${c.peripheral} (${c.port}${c.pin})`;
-}
-
-// I2C ise I2C1 (0x68)
-if(
-    c.peripheral &&
-    c.peripheral.toUpperCase().includes("I2C") &&
-    c.slaveId
-){
-    peripheralLabel = `${c.peripheral} (${c.slaveId})`;
-}
-
- svg.innerHTML+=`
- <rect x="250" y="${y}" width="140" height="40" fill="#e0f2fe"/>
- <text x="320" y="${y+25}" text-anchor="middle">${peripheralLabel}</text>
-
- <rect x="520" y="${y}" width="140" height="40" fill="#dcfce7"/>
- <text x="590" y="${y+25}" text-anchor="middle">${c.sensor}</text>
-
- <line x1="450" y1="70" x2="450" y2="${y}" stroke="black"/>
- <line x1="390" y1="${y+20}" x2="520" y2="${y+20}" stroke="blue"/>
- `;
- y+=90;
- });
-}
-
-const dz=document.getElementById("dropzone");
-dz.ondragover=e=>e.preventDefault();
-dz.ondrop=e=>{
- e.preventDefault();
- document.getElementById("elfInput").files=e.dataTransfer.files;
-};
-
-document.getElementById("applyBtn").onclick=async()=>{
- let form=new FormData();
-
- form.append("data",JSON.stringify({
-  mcu:mcu.value,
-  connections:connections
- }));
-
- form.append("testDuration", document.getElementById("testDuration").value);
- form.append("verboseLog", document.getElementById("verboseLog").checked ? "true" : "false");
- 
- let customScript = document.getElementById("pythonScript").value.trim();
- if(customScript) {
-   form.append("customScript", customScript);
- }
-
- let f=document.getElementById("elfInput").files[0];
- if(f) form.append("elf",f);
-
- let r=await fetch("/upload",{method:"POST",body:form});
- let result = await r.json();
- 
- if(result.status === "ok") {
-   alert("Configuration applied successfully!");
- } else {
-   alert("Error: " + (result.error || "Unknown error"));
- }
-};
-</script>
-</body>
+         </div>
+         <div class="card">
+            <h3>Test Configuration</h3>
+            <div class="row">
+               <div class="col">
+                  <label>Total Test Duration</label>
+                  <select id="testDuration">
+                     <option value="30">30 seconds</option>
+                     <option value="60">1 minute</option>
+                     <option value="90">1.5 minutes</option>
+                     <option value="120">2 minutes</option>
+                     <option value="150">2.5 minutes</option>
+                     <option value="180">3 minutes</option>
+                     <option value="210">3.5 minutes</option>
+                     <option value="240">4 minutes</option>
+                     <option value="270">4.5 minutes</option>
+                     <option value="300">5 minutes</option>
+                  </select>
+                  <div class="checkbox-wrapper">
+                     <input type="checkbox" id="verboseLog">
+                     <label for="verboseLog">Enable Verbose Logging</label>
+                  </div>
+               </div>
+               <div class="col">
+                  <label>Custom Python Test Script (optional)</label>
+                  <textarea id="pythonScript" placeholder="# Enter your custom Python test script here
+                     # Example:
+                     # def custom_test():
+                     #     print('Running custom test')
+                     #     return True"></textarea>
+               </div>
+            </div>
+         </div>
+         <div class="card">
+            <h3>Block Diagram</h3>
+            <svg id="diagram"></svg>
+         </div>
+         <button id="applyBtn">Apply</button>
+      </div>
+      <script>
+         let data={};
+         let connections=[];
+         
+         async function loadData(){
+          const r=await fetch("mcu_data.json");
+          data=await r.json();
+         
+          let m=document.getElementById("mcu");
+          m.innerHTML='<option value="">Select MCU</option>';
+          Object.keys(data).forEach(v=>m.innerHTML+=`<option>${v}</option>`);
+         }
+         loadData();
+         
+         const mcu=document.getElementById("mcu");
+         const peripheral=document.getElementById("peripheral");
+         const sensor=document.getElementById("sensor");
+         
+         mcu.onchange=()=>{
+          peripheral.innerHTML='<option value="">Select Peripheral</option>';
+          let p=data[mcu.value].peripherals;
+          Object.keys(p).forEach(v=>peripheral.innerHTML+=`<option>${v}</option>`);
+         
+          let port=document.getElementById("port");
+          let pin=document.getElementById("pin");
+         
+          port.innerHTML="";
+          pin.innerHTML="";
+          port.disabled=true;
+          pin.disabled=true;
+         
+          data[mcu.value].ports.forEach(v=>port.innerHTML+=`<option>${v}</option>`);
+          data[mcu.value].pins.forEach(v=>pin.innerHTML+=`<option>${v}</option>`);
+         };
+         
+         peripheral.onchange=()=>{
+         
+             sensor.innerHTML='<option value="">Select Sensor</option>';
+         
+             data[mcu.value].peripherals[peripheral.value].forEach(v=>{
+                 sensor.innerHTML+=`<option>${v}</option>`;
+             });
+         
+             const port=document.getElementById("port");
+             const pin=document.getElementById("pin");
+         
+             const p=peripheral.value.toUpperCase();
+         
+             if(p==="GPIO"){
+                 port.disabled=false;
+                 pin.disabled=false;
+             }
+             else{
+                 port.disabled=true;
+                 pin.disabled=true;
+         
+                 port.selectedIndex=0;
+                 pin.selectedIndex=0;
+             }
+         
+             document.getElementById("i2cDiv").style.display=
+                 p.includes("I2C") ? "block" : "none";
+         };
+         
+         document.getElementById("addBtn").onclick=()=>{
+         let c={
+          peripheral:peripheral.value,
+          sensor:sensor.value
+         };
+         
+         if(peripheral.value.toUpperCase()==="GPIO"){
+             c.port=document.getElementById("port").value;
+             c.pin=document.getElementById("pin").value;
+         }
+         
+         if(peripheral.value.toUpperCase().includes("I2C")){
+             c.slaveId=document.getElementById("slaveId").value;
+         }
+          connections.push(c);
+          renderConnections();
+          draw();
+         };
+         
+         function renderConnections(){
+         
+             let div = document.getElementById("connections");
+             div.innerHTML = "";
+         
+             connections.forEach(c=>{
+         
+                 let peripheralLabel = c.peripheral;
+         
+                 // GPIO -> GPIO (PA1)
+                 if(
+                     c.peripheral &&
+                     c.peripheral.toUpperCase() === "GPIO" &&
+                     c.port &&
+                     c.pin
+                 ){
+                     peripheralLabel += ` (${c.port}${c.pin})`;
+                 }
+         
+                 // I2C -> I2C1 (0x68)
+                 if(
+                     c.peripheral &&
+                     c.peripheral.toUpperCase().includes("I2C") &&
+                     c.slaveId
+                 ){
+                     peripheralLabel += ` (${c.slaveId})`;
+                 }
+         
+                 div.innerHTML += `
+                     <div class="connection">
+                         ${peripheralLabel} → ${c.sensor}
+                     </div>
+                 `;
+             });
+         }
+         
+         function draw(){
+          let svg=document.getElementById("diagram");
+          svg.innerHTML="";
+          let y=80;
+         
+          svg.innerHTML+=`<rect x="350" y="20" width="200" height="50" fill="#dbeafe"/>
+          <text x="450" y="50" text-anchor="middle">${mcu.value}</text>`;
+         
+          connections.forEach(c=>{
+             let peripheralLabel = c.peripheral;
+         
+         // GPIO ise GPIO (PA1)
+         if(
+             c.peripheral &&
+             c.peripheral.toUpperCase() === "GPIO" &&
+             c.port &&
+             c.pin
+         ){
+             peripheralLabel = `${c.peripheral} (${c.port}${c.pin})`;
+         }
+         
+         // I2C ise I2C1 (0x68)
+         if(
+             c.peripheral &&
+             c.peripheral.toUpperCase().includes("I2C") &&
+             c.slaveId
+         ){
+             peripheralLabel = `${c.peripheral} (${c.slaveId})`;
+         }
+         
+          svg.innerHTML+=`
+          <rect x="250" y="${y}" width="140" height="40" fill="#e0f2fe"/>
+          <text x="320" y="${y+25}" text-anchor="middle">${peripheralLabel}</text>
+         
+          <rect x="520" y="${y}" width="140" height="40" fill="#dcfce7"/>
+          <text x="590" y="${y+25}" text-anchor="middle">${c.sensor}</text>
+         
+          <line x1="450" y1="70" x2="450" y2="${y}" stroke="black"/>
+          <line x1="390" y1="${y+20}" x2="520" y2="${y+20}" stroke="blue"/>
+          `;
+          y+=90;
+          });
+         }
+         
+         const dz=document.getElementById("dropzone");
+         dz.ondragover=e=>e.preventDefault();
+         dz.ondrop=e=>{
+          e.preventDefault();
+          document.getElementById("elfInput").files=e.dataTransfer.files;
+         };
+         
+         document.getElementById("applyBtn").onclick=async()=>{
+          let form=new FormData();
+         
+          form.append("data",JSON.stringify({
+           mcu:mcu.value,
+           connections:connections
+          }));
+         
+          form.append("testDuration", document.getElementById("testDuration").value);
+          form.append("verboseLog", document.getElementById("verboseLog").checked ? "true" : "false");
+          
+          let customScript = document.getElementById("pythonScript").value.trim();
+          if(customScript) {
+            form.append("customScript", customScript);
+          }
+         
+          let f=document.getElementById("elfInput").files[0];
+          if(f) form.append("elf",f);
+         
+          let r=await fetch("/upload",{method:"POST",body:form});
+          let result = await r.json();
+          
+          if(result.status === "ok") {
+            alert("Configuration applied successfully!");
+          } else {
+            alert("Error: " + (result.error || "Unknown error"));
+          }
+         };
+      </script>
+   </body>
 </html>
