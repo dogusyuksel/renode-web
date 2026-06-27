@@ -1,12 +1,13 @@
 #!/bin/bash
 
+cd /workspace
 
 git submodule update --init --recursive
 
-cd thirdparty/renode
+cd /workspace/thirdparty/renode
 git submodule update --init --recursive
-cd -
 
-cd thirdparty/renode-infrastructure
+cd /workspace/thirdparty/renode-infrastructure
 git submodule update --init --recursive
-cd -
+
+cd /workspace/scripts

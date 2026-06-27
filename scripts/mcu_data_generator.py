@@ -2,9 +2,9 @@ import os
 import json
 
 
-MCU_DIR = "../extendedcpus"
-PERIPH_DIR = "../peripherals"
-OUTPUT_FILE = "../web/static/mcu_data.json"
+MCU_DIR = "/workspace/extendedcpus"
+PERIPH_DIR = "/workspace/peripherals"
+OUTPUT_FILE = "/workspace/web/static/mcu_data.json"
 
 
 def parse_perips(file):
@@ -19,7 +19,7 @@ def parse_perips(file):
         "gpio": [],
     }
 
-    with open(f"../extendedcpus/{file}", "r") as f:
+    with open(f"{MCU_DIR}/{file}", "r") as f:
         for line in f:
             words = line.strip().split(" ")
             if len(words) < 2:
@@ -41,30 +41,6 @@ def parse_perips(file):
 
             if "usart" in key:
                 result["usart"].append(key)
-
-    if os.path.exists(f"../cpus/{file}"):
-        with open(f"../cpus/{file}", "r") as f:
-            for line in f:
-                words = line.strip().split(" ")
-                if len(words) < 2:
-                    continue
-                if words[0][-1] != ":":
-                    continue
-                key = words[0][:-1]
-                if "gpio" in key:
-                    result["gpio"].append(key)
-
-                if "i2c" in key:
-                    result["i2c"].append(key)
-
-                if "spi" in key:
-                    result["spi"].append(key)
-
-                if "uart" in key:
-                    result["uart"].append(key)
-
-                if "usart" in key:
-                    result["usart"].append(key)
 
     return result
 
@@ -141,7 +117,7 @@ def build_json_structure(
 if __name__ == "__main__":
     result = {}
 
-    files = os.listdir("../extendedcpus")
+    files = os.listdir(f"{MCU_DIR}")
     for file in files:
         if not file.endswith(".repl"):
             continue
