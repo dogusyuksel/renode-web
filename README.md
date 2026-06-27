@@ -1,43 +1,47 @@
 # renode-web
 
-This project is used for creating renode resc and repl with a web UI easily!
+renode-web is a small web UI for creating Renode `.resc` and `.repl` files more easily.
 
 <img src="./images/renode-web.png" />
 
+## Usage
 
+The project is now executed through the Makefile.
 
-## HOW TO
+Run inside Docker:
 
-First, setup environment. Please note that, this project assumes your project path is at "/workspace", or use Docker (just execute './docker_ctl -b -s')
-
-
-```
-./setup_env.sh
-
+```bash
+make run-in-docker
 ```
 
-execute web applicaion
+Run inside WSL/native Ubuntu:
 
-```
-python app.py # under web folder
-```
-
-and open browser and type the url you saw on logs
-then follow the instructions and check the console
-
-Pleae note that if web UI is not up-to-date (missing mcu in dropdown etc) then please execute below command first.
-
-```
-cd UI
-python3 mcu_data_generator.py
+```bash
+make run-in-wsl
 ```
 
+The web UI starts a local Flask application. Open the URL printed in the terminal, then follow the UI and console output.
 
-## LIMITATIONS
+## Adding MCU Support
 
-* only single sensor can be connected to each peripheral
+To add support for a new MCU, place the MCU `.repl` file under:
 
+```text
+extendedcpus/
+```
 
-## EXAMPLE REPORT
+Then regenerate the MCU list and start the web UI:
+
+```bash
+make update-mcu-list
+```
+
+If the MCU dropdown in the web UI looks out of date, run `make update-mcu-list` again before starting the app.
+
+## Limitations
+
+* Only one sensor can be connected to each peripheral.
+
+## Example Report
 
 [Open the PDF](./images/report.pdf)

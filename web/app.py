@@ -12,42 +12,46 @@ calmdown_wait = 15
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 UPLOAD_DIR = "uploads"
+UPLOAD_PATH = f"/workspace/{UPLOAD_DIR}"
+UPLOAD_WEB_PATH = f"/workspace/web/{UPLOAD_DIR}"
+SCRIPTS_PATH = "/workspace/scripts"
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-def run_copy(ts, test_duration, verbose_log):
+def run_scripts(test_duration, verbose_log):
     try:
-        if os.path.exists(f"/workspace/{ts}"):
-            shutil.rmtree(f"/workspace/{ts}")
+        if os.path.exists(f"{UPLOAD_PATH}"):
+            shutil.rmtree(f"{UPLOAD_PATH}")
 
-        for f in os.listdir(f"/workspace/web/{ts}"):
+        for f in os.listdir(f"{UPLOAD_WEB_PATH}"):
             if f.endswith(".elf"):
                 os.replace(
-                    f"/workspace/web/{ts}/{f}", f"/workspace/web/{ts}/firmware.elf"
+                    f"{UPLOAD_WEB_PATH}/{f}", f"{UPLOAD_WEB_PATH}/firmware.elf"
                 )
                 break
 
-        if os.path.exists(f"/workspace/web/{ts}"):
-            shutil.copytree(f"/workspace/web/{ts}", f"/workspace/{ts}")
+        if os.path.exists(f"{UPLOAD_WEB_PATH}"):
+            shutil.copytree(f"{UPLOAD_WEB_PATH}", f"{UPLOAD_PATH}")
 
         verbose_flag = "log_enable" if verbose_log else "log_disable"
         subprocess.call(
-            f"cd /workspace && python3 auto_resc_generator.py {verbose_flag}",
+            f"cd {SCRIPTS_PATH} && python3 auto_resc_generator.py {verbose_flag}",
             shell=True,
         )
 
         test_duration_int = int(test_duration)
 
         surec1 = subprocess.Popen(
-            "cd /workspace && renode uploads/example.resc",
+            f"cd /workspace && renode {UPLOAD_PATH}/example.resc",
             shell=True,
             start_new_session=True,
         )
         time.sleep(calmdown_wait)
         # run custom test here
-        if os.path.exists(f"/workspace/{ts}/custom_test.py"):
+        if os.path.exists(f"{UPLOAD_PATH}/custom_test.py"):
             surec2 = subprocess.Popen(
-                f"cd /workspace/{ts} && python3 -u custom_test.py > /workspace/{ts}/custom_test_report.txt",
+                f"cd {UPLOAD_PATH} && python3 -u custom_test.py > {UPLOAD_PATH}/custom_test_report.txt",
                 shell=True,
                 start_new_session=True,
             )
@@ -60,7 +64,7 @@ def run_copy(ts, test_duration, verbose_log):
             print(f"{e}")
 
         subprocess.call(
-            f"cd /workspace && python3 report_creator.py --connections uploads/structure.json --diagram uploads/diagram.png --log uploads/log.txt --out uploads/report.pdf",
+            f"cd {SCRIPTS_PATH} && python3 report_creator.py --connections {UPLOAD_PATH}/structure.json --diagram {UPLOAD_PATH}/diagram.png --log {UPLOAD_PATH}/log.txt --custom {UPLOAD_PATH}/custom_test_report.txt --out {UPLOAD_PATH}/report.pdf",
             shell=True,
         )
     except Exception as e:
@@ -77,10 +81,9 @@ def upload():
     try:
         payload = json.loads(request.form.get("data"))
 
-        session_dir = UPLOAD_DIR
-        os.makedirs(session_dir, exist_ok=True)
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-        with open(os.path.join(session_dir, "structure.json"), "w") as f:
+        with open(os.path.join(UPLOAD_DIR, "structure.json"), "w") as f:
             json.dump(payload, f, indent=2)
 
         test_config = {
@@ -92,18 +95,17 @@ def upload():
         if custom_script is None:
             custom_script = str('print("No custom command executed!")')
 
-        with open(os.path.join(session_dir, "custom_test.py"), "w") as f:
+        with open(os.path.join(UPLOAD_DIR, "custom_test.py"), "w") as f:
             f.write(custom_script)
 
         elf = request.files.get("elf")
         if elf:
             filename = secure_filename(elf.filename)
-            elf.save(os.path.join(session_dir, filename))
+            elf.save(os.path.join(UPLOAD_DIR, filename))
 
         threading.Thread(
-            target=run_copy,
+            target=run_scripts,
             args=(
-                session_dir,
                 test_config["test_duration"],
                 test_config["verbose_log"],
             ),

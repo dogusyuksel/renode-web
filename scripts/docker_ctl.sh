@@ -51,16 +51,16 @@ fi
 if [ "$command" != "" ]; then
     echo "command running"
     if [ "$is_sudo" = "true" ]; then
-        docker run --rm -t --net=host -v $(pwd):/workspace --entrypoint=/bin/bash $preferred_name -c "$command"
+        docker run --rm -t --net=host -v ../$(pwd):/workspace --entrypoint=/bin/bash $preferred_name -c "$command"
     else
-        docker run --rm -t --net=host -v $(pwd):/workspace -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -u $(id -u ${USER}):$(id -g ${USER}) --entrypoint=/bin/bash $preferred_name -c "$command"
+        docker run --rm -t --net=host -v ../$(pwd):/workspace -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -u $(id -u ${USER}):$(id -g ${USER}) --entrypoint=/bin/bash $preferred_name -c "$command"
     fi
     exit 0
 fi
 
 # if no command run, lets start the docker for personal use
 if [ "$is_sudo" = "true" ]; then
-    docker run --rm -it --net=host -v $(pwd):/workspace --entrypoint=/bin/bash $preferred_name
+    docker run --rm -it --net=host -v ../$(pwd):/workspace --entrypoint=/bin/bash $preferred_name
 else
-    docker run --rm -it --net=host -v $(pwd):/workspace -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -u $(id -u ${USER}):$(id -g ${USER}) --entrypoint=/bin/bash $preferred_name
+    docker run --rm -it --net=host -v ../$(pwd):/workspace -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -u $(id -u ${USER}):$(id -g ${USER}) --entrypoint=/bin/bash $preferred_name
 fi

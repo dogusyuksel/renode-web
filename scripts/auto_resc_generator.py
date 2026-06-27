@@ -3,10 +3,15 @@ import os
 import json
 from graphviz import Digraph
 
+UPLOADS_FOLDER = "/workspace/uploads"
+EXTENDED_CPUS_FOLDER = "/workspace/extendedcpus"
+SUPPORT_FOLDER = "/workspace/support"
+PERIPHERALS_FOLDER = "/workspace/peripherals"
+
 resc_string = ""
 repl_string = ""
 
-with open("./uploads/structure.json", "r") as f:
+with open(os.path.join(UPLOADS_FOLDER, "structure.json"), "r") as f:
     data = json.load(f)
 
 def list_files_no_ext(path):
@@ -24,13 +29,13 @@ def list_files_no_ext(path):
     return namelist
 
 # lets create both files' content
-repl_string += f"""using "/workspace/extendedcpus/{data["mcu"].lower()}.repl"\n"""
+repl_string += f"""using "{EXTENDED_CPUS_FOLDER}/{data["mcu"].lower()}.repl"\n"""
 repl_string += """
 flashMem: Memory.MappedMemory
     size: 0x10000\n
 """
 
-support_files = list_files_no_ext('/workspace/support')
+support_files = list_files_no_ext(f'{SUPPORT_FOLDER}')
 for supports in support_files:
     resc_string += f'include "{supports}.cs"\n'
 
@@ -42,7 +47,7 @@ if sys.argv[1] == "log_enable":
 resc_string += f"""
 using sysbus
 mach create
-machine LoadPlatformDescription @/workspace/uploads/example.repl
+machine LoadPlatformDescription @{UPLOADS_FOLDER}/example.repl
 sysbus.cpu LogFunctionNames {verbose}
 """
 
@@ -57,27 +62,27 @@ it_has_button = False
 for item in data["connections"]:
     if item["peripheral"].upper().startswith("I2C") and not it_has_i2c:
         it_has_i2c = True
-        if not os.path.islink(f"/workspace/peripherals/i2c/{item['sensor']}.cs"):
+        if not os.path.islink(f"{PERIPHERALS_FOLDER}/i2c/{item['sensor']}.cs"):
             resc_string = (
-                f'include "/workspace/peripherals/i2c/{item["sensor"]}.cs"\n'
+                f'include "{PERIPHERALS_FOLDER}/i2c/{item["sensor"]}.cs"\n'
                 + resc_string
             )  # write at the beginning
         resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}\n'
-        if not os.path.islink(f"/workspace/peripherals/i2c/{item['sensor']}.cs"):
+        if not os.path.islink(f"{PERIPHERALS_FOLDER}/i2c/{item['sensor']}.cs"):
             repl_string += f'{item["sensor"]}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
         else:
             repl_string += f'{item["sensor"]}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
     if item["peripheral"].upper().startswith("SPI") and not it_has_spi:
         it_has_spi = True
-        if not os.path.islink(f"/workspace/peripherals/spi/{item['sensor']}.cs"):
+        if not os.path.islink(f"{PERIPHERALS_FOLDER}/spi/{item['sensor']}.cs"):
             resc_string = (
-                f'include "/workspace/peripherals/spi/{item["sensor"]}.cs"\n'
+                f'include "{PERIPHERALS_FOLDER}/spi/{item["sensor"]}.cs"\n'
                 + resc_string
             )  # write at the beginning
         resc_string += (
             f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}\n'
         )
-        if not os.path.islink(f"/workspace/peripherals/spi/{item['sensor']}.cs"):
+        if not os.path.islink(f"{PERIPHERALS_FOLDER}/spi/{item['sensor']}.cs"):
             repl_string += f"""
 {item["sensor"]}: Antmicro.Renode.Peripherals.SPI.{item["sensor"]} @ {item["peripheral"].lower()}
     memory: flashMem
@@ -90,7 +95,7 @@ for item in data["connections"]:
     if item["peripheral"].upper().startswith("GPIO"):
         counter += 1
         resc_string = (
-            f'include "/workspace/peripherals/gpio/{item["sensor"]}.cs"\n' + resc_string
+            f'include "{PERIPHERALS_FOLDER}/gpio/{item["sensor"]}.cs"\n' + resc_string
         )  # write at the beginning
         if item["sensor"].upper().startswith("LED"):
             it_has_led = True
@@ -125,11 +130,11 @@ sysbus.{item["port"]}.{item["sensor"]}{str(counter)} PressAndRelease
         telnet_port = telnet_port + 1
 
 
-resc_string += """
+resc_string += f"""
 machine StartGdbServer 3333 true
 macro reset
 \"\"\"
-    sysbus LoadELF @/workspace/uploads/firmware.elf
+    sysbus LoadELF @{UPLOADS_FOLDER}/firmware.elf
 \"\"\"
 runMacro $reset
 start
@@ -143,8 +148,8 @@ resc_string += """
 
 
 resc_string = (
-    """
-logFile @/workspace/uploads/log.txt
+    f"""
+logFile @{UPLOADS_FOLDER}/log.txt
 """
     + resc_string
     + "\n"
@@ -154,10 +159,10 @@ print(repl_string)
 print("------------------------------------------------------------")
 print(resc_string)
 
-with open("uploads/example.repl", "w") as f:
+with open(os.path.join(UPLOADS_FOLDER, "example.repl"), "w") as f:
     f.write(repl_string)
 
-with open("uploads/example.resc", "w") as f:
+with open(os.path.join(UPLOADS_FOLDER, "example.resc"), "w") as f:
     f.write(resc_string)
 
 
@@ -165,7 +170,6 @@ def remove_duplicates(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    # Tekrarlayanları kaldır (satır sırasını koruyarak)
     seen = set()
     unique_lines = []
     for line in lines:
@@ -180,8 +184,8 @@ def remove_duplicates(file_path):
         f.writelines(unique_lines)
 
 
-remove_duplicates("uploads/example.repl")
-remove_duplicates("uploads/example.resc")
+remove_duplicates(os.path.join(UPLOADS_FOLDER, "example.repl"))
+remove_duplicates(os.path.join(UPLOADS_FOLDER, "example.resc"))
 
 from graphviz import Digraph
 
@@ -308,15 +312,12 @@ def create_diagram(data):
 
         c.node("L5", "CAN", shape="box", style="filled", fillcolor="#F4CCCC")
 
-    output_path = "uploads/diagram"
+    output_path = os.path.join(UPLOADS_FOLDER, "diagram")
 
     dot.render(
         output_path,
         # cleanup=True,
         view=False,
     )
-
-    print(f"diagram created: {output_path}.png")
-
 
 create_diagram(data)

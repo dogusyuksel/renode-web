@@ -57,9 +57,9 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "USERLED",
         "BUTTON",
-        "CS"
+        "CS",
+        "USERLED"
       ],
       "can": [
         "VCAN0",
@@ -146,9 +146,9 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "USERLED",
         "BUTTON",
-        "CS"
+        "CS",
+        "USERLED"
       ],
       "can": [
         "VCAN0",

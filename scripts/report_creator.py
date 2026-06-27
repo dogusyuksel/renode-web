@@ -144,7 +144,7 @@ def level_color(level):
 # ----------------------------------------------------------------------
 # Main PDF builder
 # ----------------------------------------------------------------------
-def build_pdf(connections_path, diagram_path, log_path, out_pdf):
+def build_pdf(connections_path, diagram_path, log_path, log_custom, out_pdf):
     connections = load_json(connections_path).get("connections", [])
     mcu = load_json(connections_path).get("mcu", "unknown")
 
@@ -239,7 +239,7 @@ def build_pdf(connections_path, diagram_path, log_path, out_pdf):
     # 6. Custom Logs
     story.append(Paragraph("Custom Logs", styles["Heading2"]))
     with open(
-        "/workspace/uploads/custom_test_report.txt", "r", encoding="utf-8"
+        f"{log_custom}", "r", encoding="utf-8"
     ) as myfile:
         for aline in myfile:
             story.append(Paragraph(f"{aline}", styles["Normal"]))
@@ -254,10 +254,11 @@ def main():
     p.add_argument("--connections", required=True)
     p.add_argument("--diagram", required=True)
     p.add_argument("--log", required=True)
+    p.add_argument("--custom", required=True)
     p.add_argument("--out", default="report.pdf")
     args = p.parse_args()
 
-    build_pdf(args.connections, args.diagram, args.log, args.out)
+    build_pdf(args.connections, args.diagram, args.log, args.custom, args.out)
 
 
 if __name__ == "__main__":
