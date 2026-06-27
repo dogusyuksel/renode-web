@@ -1,3 +1,4 @@
 uploads/*
 web/uploads/*
 firmwares/stm32f103_renode/build
+renode-web
