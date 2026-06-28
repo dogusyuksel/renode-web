@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""
-generate_full_report.py
-
-Usage:
-  python3 generate_full_report.py \
-      --connections connections.json \
-      --diagram structure.png \
-      --log log.txt \
-      --out report.pdf
-
-Dependencies:
-  pip install reportlab matplotlib pillow
-"""
 
 import argparse, os, json, re
 from io import BytesIO
@@ -35,6 +22,68 @@ from reportlab.platypus import (
 )
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatter import Formatter
+
+
+class ReportLabFormatter(Formatter):
+    """Pygments kod renklendirmesini ReportLab HTML etiketlerine dönüştürür."""
+
+    def __init__(self, **options):
+        super().__init__(**options)
+        self.styles = {
+            "Keyword": "#0033B3",
+            "Name.Function": "#00627A",
+            "String": "#067D17",
+            "Comment": "#8C8C8C",
+            "Number": "#1750EB",
+            "Operator": "#000000",
+        }
+
+    def format(self, tokensource, outfile):
+        for ttype, value in tokensource:
+            # Escape HTML characters first so ReportLab doesn't fail
+            value = (
+                value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            )
+
+            # Replace spaces with &nbsp; ONLY in raw text before tags are injected
+            value = value.replace(" ", "&nbsp;")
+
+            # Determine color based on token type
+            color = None
+            for key, hex_code in self.styles.items():
+                if str(ttype).startswith(f"Token.{key}"):
+                    color = hex_code
+                    break
+
+            if color and value.strip():
+                # Split lines to preserve layout
+                lines = value.split("\n")
+                formatted_lines = [
+                    f"<font color='{color}'>{line}</font>" if line else ""
+                    for line in lines
+                ]
+                outfile.write("\n".join(formatted_lines))
+            else:
+                outfile.write(value)
+
+
+def format_python_code_to_html(file_path):
+    """Reads a Python file, highlights syntax, and returns a list of highlighted lines."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            code_text = f.read()
+
+        # Get the highlighted text from custom Pygments formatter
+        raw_html = highlight(code_text, PythonLexer(), ReportLabFormatter())
+
+        # Split by newline to manage page breaks properly line by line
+        return raw_html.split("\n")
+    except Exception as e:
+        return [f"<font color='red'>Failed to load code: {e}</font>"]
+
 
 # Font
 try:
@@ -144,7 +193,7 @@ def level_color(level):
 # ----------------------------------------------------------------------
 # Main PDF builder
 # ----------------------------------------------------------------------
-def build_pdf(connections_path, diagram_path, log_path, log_custom, out_pdf):
+def build_pdf(connections_path, diagram_path, log_path, log_custom, code_path, out_pdf):
     connections = load_json(connections_path).get("connections", [])
     mcu = load_json(connections_path).get("mcu", "unknown")
 
@@ -215,7 +264,9 @@ def build_pdf(connections_path, diagram_path, log_path, log_custom, out_pdf):
     try:
         story.append(make_centered_image(diagram_path))
     except Exception as e:
-        story.append(Paragraph(f"⚠️ Diagram could not be loaded: {e}", styles["Normal"]))
+        story.append(
+            Paragraph(f"⚠️ Diagram could not be loaded: {e}", styles["Normal"])
+        )
     story.append(PageBreak())
 
     # 5. Logs
@@ -235,12 +286,70 @@ def build_pdf(connections_path, diagram_path, log_path, log_custom, out_pdf):
         story.append(Paragraph(html, ParagraphStyle("LogLine", fontSize=9, leading=11)))
     # done
 
+    # ----------------------------------------------------------------------
+    # 6. customer test script
+    # ----------------------------------------------------------------------
     story.append(PageBreak())
-    # 6. Custom Logs
-    story.append(Paragraph("Custom Logs", styles["Heading2"]))
-    with open(
-        f"{log_custom}", "r", encoding="utf-8"
-    ) as myfile:
+    story.append(Paragraph("Customer Test Script", styles["Heading2"]))
+    story.append(Spacer(1, 0.4 * cm))
+
+    # Clean code style configuration
+    code_style = ParagraphStyle(
+        "PythonCodeStyle",
+        fontName=MONO_FONT,
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor("#24292E"),
+    )
+
+    # Fetch highlighted lines as a list
+    code_lines = format_python_code_to_html(code_path)
+
+    # Process each line individually to allow clean page breaks
+    for line in code_lines:
+        # Use a non-breaking space if the line is completely empty to preserve spacing
+        display_line = line if line.strip() else "&nbsp;"
+        line_para = Paragraph(display_line, code_style)
+
+        # Wrap each line in a seamless table row to build a continuous grey background box
+        line_table = Table([[line_para]], colWidths=[USABLE_WIDTH])
+        line_table.setStyle(
+            TableStyle(
+                [
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, -1),
+                        colors.HexColor("#F6F8FA"),
+                    ),  # GitHub light theme bg
+                    (
+                        "LINELEFT",
+                        (0, 0),
+                        (0, -1),
+                        0.5,
+                        colors.HexColor("#E1E4E8"),
+                    ),  # Sleek left border
+                    (
+                        "LINERIGHT",
+                        (0, 0),
+                        (0, -1),
+                        0.5,
+                        colors.HexColor("#E1E4E8"),
+                    ),  # Sleek right border
+                    ("TOPPADDING", (0, 0), (-1, -1), 1),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ]
+            )
+        )
+        story.append(line_table)
+    # ----------------------------------------------------------------------
+
+    story.append(PageBreak())
+    # 7. Custom Logs
+    story.append(Paragraph("Customer Test Logs", styles["Heading2"]))
+    with open(f"{log_custom}", "r", encoding="utf-8") as myfile:
         for aline in myfile:
             story.append(Paragraph(f"{aline}", styles["Normal"]))
 
@@ -255,10 +364,13 @@ def main():
     p.add_argument("--diagram", required=True)
     p.add_argument("--log", required=True)
     p.add_argument("--custom", required=True)
+    p.add_argument("--code", required=True)
     p.add_argument("--out", default="report.pdf")
     args = p.parse_args()
 
-    build_pdf(args.connections, args.diagram, args.log, args.custom, args.out)
+    build_pdf(
+        args.connections, args.diagram, args.log, args.custom, args.code, args.out
+    )
 
 
 if __name__ == "__main__":

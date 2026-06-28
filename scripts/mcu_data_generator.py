@@ -1,7 +1,6 @@
 import os
 import json
 
-
 MCU_DIR = "/workspace/extendedcpus"
 PERIPH_DIR = "/workspace/peripherals"
 OUTPUT_FILE = "/workspace/web/static/mcu_data.json"

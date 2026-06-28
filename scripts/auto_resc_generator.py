@@ -14,28 +14,27 @@ repl_string = ""
 with open(os.path.join(UPLOADS_FOLDER, "structure.json"), "r") as f:
     data = json.load(f)
 
+
 def list_files_no_ext(path):
     if not os.path.exists(path):
         return []
     namelist = [
         os.path.join(path, os.path.splitext(f)[0])
         for f in os.listdir(path)
-        if (
-            os.path.isfile(os.path.join(path, f))
-            and not f.startswith('.')
-        )
+        if (os.path.isfile(os.path.join(path, f)) and not f.startswith("."))
     ]
 
     return namelist
+
 
 # lets create both files' content
 repl_string += f"""using "{EXTENDED_CPUS_FOLDER}/{data["mcu"].lower()}.repl"\n"""
 repl_string += """
 flashMem: Memory.MappedMemory
-    size: 0x10000\n
+    size: 0x100000\n
 """
 
-support_files = list_files_no_ext(f'{SUPPORT_FOLDER}')
+support_files = list_files_no_ext(f"{SUPPORT_FOLDER}")
 for supports in support_files:
     resc_string += f'include "{supports}.cs"\n'
 
@@ -51,71 +50,57 @@ machine LoadPlatformDescription @{UPLOADS_FOLDER}/example.repl
 sysbus.cpu LogFunctionNames {verbose}
 """
 
-button_substring = ""
 counter = 0
 telnet_port = 1234
+i2c_sensor_counter = 1
+spi_sensor_counter = 1
 it_has_i2c = False
-it_has_spi = False
-it_has_led = False
-it_has_cs = False
 it_has_button = False
 for item in data["connections"]:
-    if item["peripheral"].upper().startswith("I2C") and not it_has_i2c:
-        it_has_i2c = True
+    if item["peripheral"].upper().startswith("I2C"):
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/i2c/{item['sensor']}.cs"):
             resc_string = (
                 f'include "{PERIPHERALS_FOLDER}/i2c/{item["sensor"]}.cs"\n'
                 + resc_string
             )  # write at the beginning
-        resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}\n'
+        if it_has_i2c == False:
+            resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}\n'
+            it_has_i2c = True
+        resc_string += f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}{i2c_sensor_counter}\n'
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/i2c/{item['sensor']}.cs"):
-            repl_string += f'{item["sensor"]}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
+            repl_string += f'{item["sensor"]}{i2c_sensor_counter}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
         else:
-            repl_string += f'{item["sensor"]}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
-    if item["peripheral"].upper().startswith("SPI") and not it_has_spi:
-        it_has_spi = True
+            repl_string += f'{item["sensor"]}{i2c_sensor_counter}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
+        i2c_sensor_counter = i2c_sensor_counter + 1
+    if item["peripheral"].upper().startswith("SPI"):
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/spi/{item['sensor']}.cs"):
             resc_string = (
                 f'include "{PERIPHERALS_FOLDER}/spi/{item["sensor"]}.cs"\n'
                 + resc_string
             )  # write at the beginning
         resc_string += (
-            f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}\n'
+            f'logLevel -1 sysbus.{item["peripheral"].lower()}.{item["sensor"]}{spi_sensor_counter}\n'
         )
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/spi/{item['sensor']}.cs"):
             repl_string += f"""
-{item["sensor"]}: Antmicro.Renode.Peripherals.SPI.{item["sensor"]} @ {item["peripheral"].lower()}
+{item["sensor"]}{spi_sensor_counter}: Antmicro.Renode.Peripherals.SPI.{item["sensor"]} @ {item["peripheral"].lower()}
     memory: flashMem
 """
         else:
             repl_string += f"""
-{item["sensor"]}: SPI.{item["sensor"]} @ {item["peripheral"].lower()}
+{item["sensor"]}{spi_sensor_counter}: SPI.{item["sensor"]} @ {item["peripheral"].lower()}
     memory: flashMem
 """
+        spi_sensor_counter = spi_sensor_counter + 1
     if item["peripheral"].upper().startswith("GPIO"):
         counter += 1
         resc_string = (
             f'include "{PERIPHERALS_FOLDER}/gpio/{item["sensor"]}.cs"\n' + resc_string
         )  # write at the beginning
-        if item["sensor"].upper().startswith("LED"):
-            it_has_led = True
-        if item["sensor"].upper().startswith("CS"):
-            it_has_cs = True
-        if item["sensor"].upper().startswith("BUTTON"):
-            it_has_button = True
-            button_substring += f"""
-sleep 2
-sysbus.{item["port"]}.{item["sensor"]}{str(counter)} PressAndRelease
-"""
-            repl_string += f"""
-{item["sensor"]}{str(counter)}: Antmicro.Renode.Peripherals.Miscellaneous.{item["sensor"]} @ {item["port"]}
-    -> {item["port"]}@{item["pin"]}
-"""
-        else:
-            resc_string += (
-                f'logLevel -1 {item["port"]}.{item["sensor"]}{str(counter)}\n'
-            )
-            repl_string += f"""
+        resc_string += (
+            f'logLevel -1 {item["port"]}.{item["sensor"]}{str(counter)}\n'
+        )
+        repl_string += f"""
 {item["sensor"]}{str(counter)}: Antmicro.Renode.Peripherals.Miscellaneous.{item["sensor"]} @ {item["port"]}
 {item["port"]}:
     {item["pin"]} -> {item["sensor"]}{str(counter)}@0
@@ -140,20 +125,13 @@ runMacro $reset
 start
 """
 
-if it_has_button:
-    resc_string += button_substring + "\n"
-
 resc_string += """
 """
 
 
-resc_string = (
-    f"""
+resc_string = f"""
 logFile @{UPLOADS_FOLDER}/log.txt
-"""
-    + resc_string
-    + "\n"
-)
+""" + resc_string + "\n"
 
 print(repl_string)
 print("------------------------------------------------------------")
@@ -319,5 +297,6 @@ def create_diagram(data):
         # cleanup=True,
         view=False,
     )
+
 
 create_diagram(data)

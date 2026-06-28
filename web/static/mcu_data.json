@@ -57,13 +57,8 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "BUTTON",
         "CS",
         "USERLED"
-      ],
-      "can": [
-        "VCAN0",
-        "VCAN1"
       ],
       "usart1": [
         "LOGGER_USART"
@@ -146,13 +141,8 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "BUTTON",
         "CS",
         "USERLED"
-      ],
-      "can": [
-        "VCAN0",
-        "VCAN1"
       ],
       "uart4": [
         "LOGGER_UART"

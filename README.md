@@ -38,10 +38,6 @@ make update-mcu-list
 
 If the MCU dropdown in the web UI looks out of date, run `make update-mcu-list` again before starting the app.
 
-## Limitations
-
-* Only one sensor can be connected to each peripheral.
-
 ## Example Report
 
-[Open the PDF](./images/report.pdf)
+[Open the PDF](./examples/stm32l451/report.pdf)

@@ -64,7 +64,7 @@ def run_scripts(test_duration, verbose_log):
             print(f"{e}")
 
         subprocess.call(
-            f"cd {SCRIPTS_PATH} && python3 report_creator.py --connections {UPLOAD_PATH}/structure.json --diagram {UPLOAD_PATH}/diagram.png --log {UPLOAD_PATH}/log.txt --custom {UPLOAD_PATH}/custom_test_report.txt --out {UPLOAD_PATH}/report.pdf",
+            f"cd {SCRIPTS_PATH} && python3 report_creator.py --connections {UPLOAD_PATH}/structure.json --diagram {UPLOAD_PATH}/diagram.png --log {UPLOAD_PATH}/log.txt --custom {UPLOAD_PATH}/custom_test_report.txt --code {UPLOAD_PATH}/custom_test.py --out {UPLOAD_PATH}/report.pdf",
             shell=True,
         )
     except Exception as e:

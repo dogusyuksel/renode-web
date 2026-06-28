@@ -1,9 +1,12 @@
 [submodule "thirdparty/renode"]
 	path = thirdparty/renode
 	url = https://github.com/renode/renode.git
+	ignore = dirty
 [submodule "thirdparty/renode-infrastructure"]
 	path = thirdparty/renode-infrastructure
 	url = https://github.com/renode/renode-infrastructure.git
+	ignore = dirty
 [submodule "thirdparty/cmsis-svd-data"]
 	path = thirdparty/cmsis-svd-data
 	url = https://github.com/cmsis-svd/cmsis-svd-data.git
+	ignore = dirty

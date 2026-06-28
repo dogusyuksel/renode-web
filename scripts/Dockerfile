@@ -30,7 +30,7 @@ RUN git config --global --add safe.directory /workspace
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-RUN pip install Pillow graphviz reportlab matplotlib
+RUN pip install Pillow graphviz reportlab matplotlib pygments
 RUN pip install flask==3.1.2
 RUN pip install jsonify==0.5
 
