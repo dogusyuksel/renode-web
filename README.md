@@ -41,3 +41,8 @@ If the MCU dropdown in the web UI looks out of date, run `make update-mcu-list` 
 ## Example Report
 
 [Open the PDF](./examples/stm32l451/report.pdf)
+
+## How To Debug
+
+On port 3333, renode is starting GDB server. So you can write propert test script to start a GDB client
+OR you can include "cm_backtrace" library into your project, direct outputs via UART and observe your report. 
