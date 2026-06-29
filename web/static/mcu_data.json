@@ -57,8 +57,11 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "CS",
-        "USERLED"
+        "USERLED",
+        "CS"
+      ],
+      "can": [
+        "CANHUB"
       ],
       "usart1": [
         "LOGGER_USART"
@@ -141,8 +144,11 @@
         "LOGGER_SPI"
       ],
       "gpio": [
-        "CS",
-        "USERLED"
+        "USERLED",
+        "CS"
+      ],
+      "can": [
+        "CANHUB"
       ],
       "uart4": [
         "LOGGER_UART"

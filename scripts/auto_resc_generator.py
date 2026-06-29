@@ -54,9 +54,26 @@ counter = 0
 telnet_port = 1234
 i2c_sensor_counter = 1
 spi_sensor_counter = 1
+can_sensor_counter = 0
 it_has_i2c = False
+it_has_can = False
 it_has_button = False
 for item in data["connections"]:
+    if item["peripheral"].upper().startswith("CAN"):
+        if not os.path.islink(f"{PERIPHERALS_FOLDER}/can/{item['sensor']}.cs"):
+            if it_has_can == False:
+                resc_string = (
+                    f'include "{PERIPHERALS_FOLDER}/can/{item["sensor"]}.cs"\n'
+                    + resc_string
+                )  # write at the beginning
+                it_has_can = True
+        resc_string += f'emulation CreateCANHub "canHub{can_sensor_counter}" 1000000\n'
+        resc_string += f'machine CreateSocketCANBridge "socketcan" "vcan{can_sensor_counter}"\n'
+        resc_string += f'connector Connect socketcan canHub{can_sensor_counter}\n'
+        resc_string += f'connector Connect can{can_sensor_counter + 1} canHub{can_sensor_counter}\n'
+        resc_string += '\n'
+        can_sensor_counter = can_sensor_counter + 1
+
     if item["peripheral"].upper().startswith("I2C"):
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/i2c/{item['sensor']}.cs"):
             resc_string = (
@@ -71,7 +88,9 @@ for item in data["connections"]:
             repl_string += f'{item["sensor"]}{i2c_sensor_counter}: Antmicro.Renode.Peripherals.I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
         else:
             repl_string += f'{item["sensor"]}{i2c_sensor_counter}: I2C.{item["sensor"]} @ {item["peripheral"].lower()} {item["slaveId"]}\n'
+        resc_string += '\n'
         i2c_sensor_counter = i2c_sensor_counter + 1
+
     if item["peripheral"].upper().startswith("SPI"):
         if not os.path.islink(f"{PERIPHERALS_FOLDER}/spi/{item['sensor']}.cs"):
             resc_string = (
@@ -91,7 +110,9 @@ for item in data["connections"]:
 {item["sensor"]}{spi_sensor_counter}: SPI.{item["sensor"]} @ {item["peripheral"].lower()}
     memory: flashMem
 """
+        resc_string += '\n'
         spi_sensor_counter = spi_sensor_counter + 1
+
     if item["peripheral"].upper().startswith("GPIO"):
         counter += 1
         resc_string = (
@@ -112,6 +133,7 @@ for item in data["connections"]:
         resc_string += f'showAnalyzer {item["peripheral"].lower()}\n'
         resc_string += f'emulation CreateServerSocketTerminal {telnet_port} "{item["peripheral"].upper()}" false\n'
         resc_string += f'connector Connect sysbus.{item["peripheral"].lower()} {item["peripheral"].upper()}\n'
+        resc_string += '\n'
         telnet_port = telnet_port + 1
 
 

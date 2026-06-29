@@ -115,7 +115,7 @@ def upload():
         return jsonify(
             {
                 "status": "ok",
-                "folder": session_dir,
+                "folder": UPLOAD_DIR ,
                 "test_duration": test_config["test_duration"],
                 "verbose_log": test_config["verbose_log"],
                 "custom_script_uploaded": custom_script is not None,
